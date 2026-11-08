@@ -1,8 +1,3 @@
-import { SoundEngine } from './audio.js';
-import { EffectsManager } from './particles.js';
-import { LEVELS, GRID_ROWS, GRID_COLS, loadCustomGrid, saveCustomGrid } from './levels.js';
-import { Paddle, Ball, Brick, PowerUp, Laser } from './entities.js';
-
 const HIGH_SCORE_KEY = 'neon_breakout_highscore';
 
 class NeonBreakoutGame {

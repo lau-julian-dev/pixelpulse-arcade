@@ -2,7 +2,7 @@
  * Particle & Visual Effects System
  * Handles brick shatter sparks, floating score popups, and screen-shake physics.
  */
-export class Particle {
+class Particle {
   constructor(x, y, color, speedScale = 1) {
     this.x = x;
     this.y = y;
@@ -36,7 +36,7 @@ export class Particle {
   }
 }
 
-export class FloatingText {
+class FloatingText {
   constructor(x, y, text, color = '#38bdf8') {
     this.x = x;
     this.y = y;
@@ -65,7 +65,7 @@ export class FloatingText {
   }
 }
 
-export class EffectsManager {
+class EffectsManager {
   constructor() {
     this.particles = [];
     this.floatingTexts = [];

@@ -48,15 +48,11 @@ neon-breakout/
 
 ## 🚀 Getting Started (Run Locally)
 
-Because this project uses native ES6 Modules (`<script type="module">`), serve the folder with any local static server:
+**Option 1: Open Directly in Your Browser**
+Simply double-click `index.html` to play immediately in any modern browser!
 
+**Option 2: Run Local Dev Server**
 ```bash
-# Using Node.js (npx)
-npx serve .
-
-# OR using Python
-python -m http.server 8080
+node server.js
 ```
-
-Then open **`http://localhost:3000`** (or `http://localhost:8080`) in your browser!
-*(Note: You can also render and play it directly inside Antigravity!)*
+Then open **`http://localhost:3000`** in your browser.

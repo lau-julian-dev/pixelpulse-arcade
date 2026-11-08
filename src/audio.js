@@ -2,7 +2,7 @@
  * Procedural Web Audio API Sound Synthesizer
  * Generates retro arcade sound effects in real-time without external audio assets.
  */
-export class SoundEngine {
+class SoundEngine {
   constructor() {
     this.ctx = null;
     this.enabled = true;

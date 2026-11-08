@@ -3,7 +3,7 @@
  * Classes: Paddle, Ball, Brick, PowerUp, Laser
  */
 
-export class Paddle {
+class Paddle {
   constructor(canvasWidth, canvasHeight) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
@@ -73,7 +73,7 @@ export class Paddle {
   }
 }
 
-export class Ball {
+class Ball {
   constructor(x, y, speed = 6.6) {
     this.x = x;
     this.y = y;
@@ -161,7 +161,7 @@ export class Ball {
   }
 }
 
-export class Brick {
+class Brick {
   constructor(row, col, x, y, width, height, type) {
     this.row = row;
     this.col = col;
@@ -242,7 +242,7 @@ export class Brick {
   }
 }
 
-export const POWERUP_TYPES = [
+const POWERUP_TYPES = [
   { id: 'MULTI', label: '⚡ MULTI-BALL', color: '#38bdf8' },
   { id: 'WIDE', label: '↔️ WIDE PADDLE', color: '#22c55e' },
   { id: 'LASER', label: '🔫 LASER CANNON', color: '#f43f5e' },
@@ -250,7 +250,7 @@ export const POWERUP_TYPES = [
   { id: 'LIFE', label: '❤️ +1 LIFE', color: '#ec4899' },
 ];
 
-export class PowerUp {
+class PowerUp {
   constructor(x, y) {
     this.x = x;
     this.y = y;
@@ -288,7 +288,7 @@ export class PowerUp {
   }
 }
 
-export class Laser {
+class Laser {
   constructor(x, y) {
     this.x = x;
     this.y = y;

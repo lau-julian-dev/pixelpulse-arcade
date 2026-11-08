@@ -10,10 +10,10 @@
  *  9 = Indestructible Steel Barrier
  */
 
-export const GRID_ROWS = 8;
-export const GRID_COLS = 11;
+const GRID_ROWS = 8;
+const GRID_COLS = 11;
 
-export const LEVELS = [
+const LEVELS = [
   {
     name: '1. Classic Neon',
     subtitle: 'Warm-up Stage — Chain your combos!',
@@ -88,7 +88,7 @@ export const LEVELS = [
 
 const CUSTOM_LEVEL_KEY = 'neon_breakout_custom_level';
 
-export function loadCustomGrid() {
+function loadCustomGrid() {
   try {
     const saved = localStorage.getItem(CUSTOM_LEVEL_KEY);
     if (saved) {
@@ -110,7 +110,7 @@ export function loadCustomGrid() {
   ];
 }
 
-export function saveCustomGrid(grid) {
+function saveCustomGrid(grid) {
   try {
     localStorage.setItem(CUSTOM_LEVEL_KEY, JSON.stringify(grid));
   } catch (e) {
