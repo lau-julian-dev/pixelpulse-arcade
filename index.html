@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEON BREAKOUT // Arcade Physics Engine</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header & Controls -->
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-badge">ARCADE // OOP</span>
+        <h1>NEON<span>BREAKOUT</span></h1>
+      </div>
+
+      <div class="hud-stats">
+        <div class="stat-card">
+          <span class="stat-label">SCORE</span>
+          <span class="stat-value" id="score-display">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">COMBO</span>
+          <span class="stat-value accent-combo" id="combo-display">1x</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">LEVEL</span>
+          <span class="stat-value" id="level-display">1 / 5</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">LIVES</span>
+          <span class="stat-value accent-lives" id="lives-display">♥♥♥</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">HIGH SCORE</span>
+          <span class="stat-value accent-gold" id="highscore-display">0</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-editor" class="btn btn-secondary" title="Open Custom Level Editor">
+          🛠️ Level Editor
+        </button>
+        <button id="btn-sound" class="btn btn-icon" title="Toggle Synth Audio">
+          🔊
+        </button>
+        <button id="btn-pause" class="btn btn-icon" title="Pause Game (P)">
+          ⏸️
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="stage-wrapper">
+      <div class="canvas-container" id="canvas-container">
+        <canvas id="game-canvas" width="900" height="600"></canvas>
+
+        <!-- Active Power-up Indicators -->
+        <div id="powerup-bar" class="powerup-bar"></div>
+
+        <!-- Overlay Screens (Start, Pause, Level Complete, Game Over) -->
+        <div id="overlay" class="overlay active">
+          <div class="overlay-card">
+            <p class="overlay-subtitle" id="overlay-subtitle">HTML5 CANVAS &bull; 2D PHYSICS ENGINE</p>
+            <h2 class="overlay-title" id="overlay-title">NEON BREAKOUT</h2>
+            <p class="overlay-desc" id="overlay-desc">
+              Shatter bricks, chain combos, collect power-ups, or build your own levels.
+            </p>
+
+            <div class="powerup-legend">
+              <span class="pill pill-multi">⚡ Multi-Ball</span>
+              <span class="pill pill-wide">↔️ Wide Paddle</span>
+              <span class="pill pill-laser">🔫 Laser Cannon</span>
+              <span class="pill pill-fire">🔥 Fireball (Piercing)</span>
+              <span class="pill pill-life">❤️ Extra Life</span>
+            </div>
+
+            <div class="overlay-buttons">
+              <button id="btn-start" class="btn btn-primary btn-large">
+                START GAME (SPACE)
+              </button>
+              <button id="btn-open-editor-overlay" class="btn btn-secondary">
+                🛠️ Build Custom Level
+              </button>
+            </div>
+
+            <div class="controls-hint">
+              <span><strong>Mouse</strong> or <strong>← / → / A / D</strong> to Move Paddle</span>
+              <span>&bull;</span>
+              <span><strong>Space / Click</strong> to Launch Ball &amp; Fire Lasers</span>
+              <span>&bull;</span>
+              <span><strong>P</strong> to Pause</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Level Editor Modal -->
+        <div id="editor-modal" class="overlay hidden">
+          <div class="overlay-card editor-card">
+            <div class="editor-header">
+              <h2>🛠️ Custom Level Editor</h2>
+              <button id="btn-close-editor" class="btn btn-icon">✕</button>
+            </div>
+            <p class="editor-instructions">
+              Select a brick type below, then click or drag across the grid to paint your level!
+            </p>
+
+            <div class="palette" id="editor-palette">
+              <button class="palette-btn active" data-type="1">🟦 Standard (1 HP)</button>
+              <button class="palette-btn" data-type="2">🟧 Armored (2 HP)</button>
+              <button class="palette-btn" data-type="3">🟪 Heavy (3 HP)</button>
+              <button class="palette-btn" data-type="4">💥 Explosive TNT</button>
+              <button class="palette-btn" data-type="9">⬛ Indestructible Steel</button>
+              <button class="palette-btn" data-type="0">🧹 Eraser</button>
+            </div>
+
+            <div id="editor-grid" class="editor-grid"></div>
+
+            <div class="editor-actions">
+              <button id="btn-clear-grid" class="btn btn-secondary">Clear All</button>
+              <button id="btn-mirror-grid" class="btn btn-secondary">Mirror Left → Right</button>
+              <button id="btn-play-custom" class="btn btn-primary">▶️ Play Custom Level</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Level Select & Info -->
+    <footer class="bottom-bar">
+      <div class="level-selector">
+        <span class="footer-label">SELECT STAGE:</span>
+        <button class="stage-btn active" data-level="0">1. Classic Neon</button>
+        <button class="stage-btn" data-level="1">2. Twin Citadels</button>
+        <button class="stage-btn" data-level="2">3. Chain Reaction</button>
+        <button class="stage-btn" data-level="3">4. Cyber Invader</button>
+        <button class="stage-btn" data-level="4">5. Core Reactor</button>
+      </div>
+      <div class="footer-meta">
+        Built with Vanilla JS ES6 Modules &amp; HTML5 Canvas
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>
