@@ -1,58 +1,67 @@
-# ⚡ Neon Breakout — HTML5 Canvas & 2D Physics Engine
+# 🕹️ PixelPulse — Web Arcade Playground
 
-A modular, zero-dependency arcade **Breakout / Brick Breaker** game built with **Vanilla JavaScript (ES6 Modules)**, **HTML5 Canvas**, and the **Web Audio API**.
+A modular, multi-game **Retro Arcade Playground** built with **Vanilla JavaScript**, **HTML5 Canvas**, and a real-time **Live Game Customizer Engine**.
 
-Designed with clean Object-Oriented Programming (OOP) principles, custom 2D collision detection, particle dynamics, and an interactive **Custom Level Editor**.
-
----
-
-## ✨ Key Engineering Features
-
-- **2D Physics & Collision Resolution:**
-  - Circle-to-AABB (Axis-Aligned Bounding Box) collision detection with penetration-depth overlap resolution for accurate horizontal/vertical reflections.
-  - Angle-based paddle deflection math (`-68°` to `+68°` dynamic bounce vector based on impact offset from paddle center).
-- **Object-Oriented Entity System (`src/entities.js`):**
-  - Encapsulated classes for [`Paddle`](./src/entities.js), [`Ball`](./src/entities.js), [`Brick`](./src/entities.js), [`PowerUp`](./src/entities.js), and [`Laser`](./src/entities.js).
-  - Supports multi-hit armored bricks, indestructible steel barriers, and recursive chain-reaction **TNT explosive bricks**.
-- **5 Power-Up Systems:**
-  - `⚡ MULTI-BALL` (trigonometric velocity vector splitting)
-  - `↔️ WIDE PADDLE` (timed paddle expansion)
-  - `🔫 LASER CANNON` (dual projectile emitters)
-  - `🔥 FIREBALL` (piercing trajectories that slice through bricks without reflecting)
-  - `❤️ EXTRA LIFE`
-- **Interactive Level Editor (`src/levels.js`):**
-  - Paint custom $8 \times 11$ brick matrices, mirror layouts symmetrically, persist designs to `localStorage`, and playtest immediately.
-- **Procedural Audio Synthesizer (`src/audio.js`):**
-  - Real-time retro sound effects synthesized via Web Audio API oscillators and exponential frequency ramps (zero external audio files).
-- **Particle & Camera Shake Engine (`src/particles.js`):**
-  - Gravity-affected spark particles, motion trails, combo multiplier popups, and screen-shake feedback.
+Designed using a clean **Cartridge / Plugin Architecture** where a central Arcade Hub orchestrates shared rendering loops, procedural Web Audio synthesis, particle effects, high-score persistence, and per-game live settings.
 
 ---
 
-## 📂 Project Structure
+## 🎮 Included Arcade Cartridges & Live Customizations
+
+### 1. 🧱 Block Breaker (`BreakoutGame`)
+- **Mechanics:** Circle-to-AABB collision physics, dynamic paddle deflection angles (`-66°` to `+66°`), 5 power-ups (`Multi-Ball`, `Wide Paddle`, `Laser Cannon`, `Fireball`, `Extra Life`), recursive TNT chain-reaction bricks, and a **Custom Level Editor**.
+- **Live Customizer Options:**
+  - Ball Speed slider (`4.0` to `11.0`)
+  - Paddle Size (`Compact`, `Normal`, `Wide`)
+  - Paddle Color Swatches (Sky, Mint, Coral, Gold, Lavender)
+  - Power-Up Drop Rate (`Low`, `Normal`, `Chaos!`)
+
+### 2. 🐍 Cyber Snake (`SnakeGame`)
+- **Mechanics:** Grid-based queue segment movement, multi-tier fruits (Apples, Power Plums, Golden Berries), self-collision detection, and portal boundary math.
+- **Live Customizer Options:**
+  - Snake Color Palette
+  - Movement Speed (`Chill`, `Normal`, `Fast`, `Hyper`)
+  - Arena Wall Mode (`Solid Walls` vs. `Portal Wrap-Around`)
+  - Simultaneous Fruits (`1 Fruit`, `3 Fruits`, `5 Feast!`)
+
+### 3. 🏓 Pong Arena (`PongGame`)
+- **Mechanics:** Autonomous tracking AI with difficulty scaling, local 2-player keyboard support, and rally-based velocity acceleration.
+- **Live Customizer Options:**
+  - Match Mode (`1P vs AI` or `2P Keyboard`)
+  - AI Difficulty (`Easy`, `Medium`, `Pro AI`)
+  - Serve Ball Speed (`5.0` to `11.0`)
+  - Player Paddle Color & Target Score (`5`, `7`, `11` pts)
+
+### 4. 👾 Space Defender (`SpaceDefenderGame`)
+- **Mechanics:** Classic wave-based alien formation movement, destructible energy bunkers, starfield parallax, and multi-mode laser weapons.
+- **Live Customizer Options:**
+  - Starfighter Color Palette
+  - Weapon System (`Standard`, `Rapid Fire`, `Twin Laser`)
+  - Alien Fleet Speed (`Chill`, `Normal`, `Blitz`)
+
+---
+
+## 📂 Project Architecture
 
 ```text
 neon-breakout/
-├── index.html          # Main viewport, HUD, and Level Editor modal
-├── style.css           # Cyberpunk/Neon glassmorphism UI styling
-├── README.md           # Documentation & architecture overview
+├── index.html          # Arcade cabinet shell, game tabs & live customizer sidebar
+├── style.css           # Clean, modern retro-pop arcade theme
+├── server.js           # Zero-dependency Node.js local static server
 └── src/
-    ├── game.js         # Core game loop (requestAnimationFrame), state machine & collisions
-    ├── entities.js     # OOP classes: Paddle, Ball, Brick, PowerUp, Laser
-    ├── particles.js    # Particle system, floating combat text & screen shake
-    ├── levels.js       # 5 built-in campaign stages + Level Editor persistence
-    └── audio.js        # Web Audio API procedural sound synthesizer
+    ├── game.js         # ArcadePlaygroundHub controller + BreakoutGame cartridge
+    ├── entities.js     # OOP classes for Block Breaker (Paddle, Ball, Brick, PowerUp, Laser)
+    ├── snake.js        # SnakeGame cartridge engine
+    ├── pong.js         # PongGame cartridge engine (1P AI & 2P local)
+    ├── invaders.js     # SpaceDefenderGame cartridge engine
+    ├── levels.js       # Campaign stage matrices & Level Editor persistence
+    ├── particles.js    # Shared particle explosions, floating text & screen shake
+    └── audio.js        # Procedural Web Audio API sound synthesizer
 ```
 
 ---
 
-## 🚀 Getting Started (Run Locally)
+## 🚀 How to Run
 
-**Option 1: Open Directly in Your Browser**
-Simply double-click `index.html` to play immediately in any modern browser!
-
-**Option 2: Run Local Dev Server**
-```bash
-node server.js
-```
-Then open **`http://localhost:3000`** in your browser.
+1. **Direct Browser Launch:** Double-click `index.html` in File Explorer to play immediately in any browser.
+2. **Local Dev Server:** Run `node server.js` and open `http://localhost:3000`.

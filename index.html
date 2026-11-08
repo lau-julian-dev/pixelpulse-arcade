@@ -3,150 +3,334 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEON BREAKOUT // Arcade Physics Engine</title>
+  <title>PIXELPULSE // Retro Arcade Playground</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app-container">
-    <!-- Top Header & Controls -->
-    <header class="top-bar">
+  <div class="arcade-shell">
+    <!-- Top Navigation & Game Cartridge Selector -->
+    <header class="arcade-header">
       <div class="brand">
-        <span class="brand-badge">ARCADE // OOP</span>
-        <h1>NEON<span>BREAKOUT</span></h1>
-      </div>
-
-      <div class="hud-stats">
-        <div class="stat-card">
-          <span class="stat-label">SCORE</span>
-          <span class="stat-value" id="score-display">0</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">COMBO</span>
-          <span class="stat-value accent-combo" id="combo-display">1x</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">LEVEL</span>
-          <span class="stat-value" id="level-display">1 / 5</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">LIVES</span>
-          <span class="stat-value accent-lives" id="lives-display">♥♥♥</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">HIGH SCORE</span>
-          <span class="stat-value accent-gold" id="highscore-display">0</span>
+        <div class="brand-logo">🕹️</div>
+        <div>
+          <span class="brand-tag">WEB ARCADE PLAYGROUND</span>
+          <h1>PIXEL<span>PULSE</span></h1>
         </div>
       </div>
 
-      <div class="header-actions">
-        <button id="btn-editor" class="btn btn-secondary" title="Open Custom Level Editor">
-          🛠️ Level Editor
+      <nav class="game-tabs" aria-label="Select Arcade Game">
+        <button class="game-tab active" data-game="breakout">
+          <span class="tab-icon">🧱</span>
+          <span>Block Breaker</span>
         </button>
-        <button id="btn-sound" class="btn btn-icon" title="Toggle Synth Audio">
-          🔊
+        <button class="game-tab" data-game="snake">
+          <span class="tab-icon">🐍</span>
+          <span>Snake</span>
         </button>
-        <button id="btn-pause" class="btn btn-icon" title="Pause Game (P)">
-          ⏸️
+        <button class="game-tab" data-game="pong">
+          <span class="tab-icon">🏓</span>
+          <span>Pong Arena</span>
         </button>
+        <button class="game-tab" data-game="invaders">
+          <span class="tab-icon">👾</span>
+          <span>Space Defender</span>
+        </button>
+      </nav>
+
+      <div class="quick-actions">
+        <button id="btn-sound" class="btn btn-icon" title="Toggle Arcade Audio">🔊</button>
+        <button id="btn-pause" class="btn btn-icon" title="Pause / Resume (P)">⏸️</button>
+        <button id="btn-restart" class="btn btn-secondary" title="Restart Current Game">↻ Restart</button>
       </div>
     </header>
 
-    <!-- Main Game Area -->
-    <main class="stage-wrapper">
-      <div class="canvas-container" id="canvas-container">
-        <canvas id="game-canvas" width="900" height="600"></canvas>
+    <!-- Main Content: Game Stage + Live Customizer Sidebar -->
+    <div class="arcade-workspace">
+      <!-- Left: HUD + Canvas Cabinet -->
+      <section class="stage-column">
+        <!-- Dynamic HUD Bar -->
+        <div class="hud-bar">
+          <div class="hud-pill">
+            <span class="hud-label">SCORE</span>
+            <span class="hud-value" id="hud-score">0</span>
+          </div>
+          <div class="hud-pill">
+            <span class="hud-label" id="hud-stat1-label">COMBO</span>
+            <span class="hud-value accent-sky" id="hud-stat1-val">1x</span>
+          </div>
+          <div class="hud-pill">
+            <span class="hud-label" id="hud-stat2-label">LIVES</span>
+            <span class="hud-value accent-coral" id="hud-stat2-val">♥♥♥</span>
+          </div>
+          <div class="hud-pill">
+            <span class="hud-label" id="hud-stat3-label">STAGE</span>
+            <span class="hud-value accent-mint" id="hud-stat3-val">1 / 5</span>
+          </div>
+          <div class="hud-pill">
+            <span class="hud-label">HIGH SCORE</span>
+            <span class="hud-value accent-amber" id="hud-highscore">0</span>
+          </div>
+        </div>
 
-        <!-- Active Power-up Indicators -->
-        <div id="powerup-bar" class="powerup-bar"></div>
+        <!-- Canvas Container -->
+        <div class="canvas-cabinet">
+          <canvas id="game-canvas" width="900" height="600"></canvas>
 
-        <!-- Overlay Screens (Start, Pause, Level Complete, Game Over) -->
-        <div id="overlay" class="overlay active">
-          <div class="overlay-card">
-            <p class="overlay-subtitle" id="overlay-subtitle">HTML5 CANVAS &bull; 2D PHYSICS ENGINE</p>
-            <h2 class="overlay-title" id="overlay-title">NEON BREAKOUT</h2>
-            <p class="overlay-desc" id="overlay-desc">
-              Shatter bricks, chain combos, collect power-ups, or build your own levels.
-            </p>
+          <!-- Active Power-up Indicators (for Block Breaker) -->
+          <div id="powerup-bar" class="powerup-bar"></div>
 
-            <div class="powerup-legend">
-              <span class="pill pill-multi">⚡ Multi-Ball</span>
-              <span class="pill pill-wide">↔️ Wide Paddle</span>
-              <span class="pill pill-laser">🔫 Laser Cannon</span>
-              <span class="pill pill-fire">🔥 Fireball (Piercing)</span>
-              <span class="pill pill-life">❤️ Extra Life</span>
+          <!-- Start / Pause / Game Over Overlay -->
+          <div id="overlay" class="overlay active">
+            <div class="overlay-card">
+              <span class="overlay-badge" id="overlay-subtitle">ARCADE CARTRIDGE #1</span>
+              <h2 class="overlay-title" id="overlay-title">BLOCK BREAKER</h2>
+              <p class="overlay-desc" id="overlay-desc">
+                Bounce the ball, chain combos, grab power-ups, and customize your physics on the right!
+              </p>
+
+              <div class="overlay-buttons">
+                <button id="btn-start" class="btn btn-primary btn-large">
+                  ▶️ PLAY NOW (SPACE)
+                </button>
+              </div>
+
+              <div class="controls-hint" id="overlay-controls-hint">
+                Move: <strong>Mouse</strong> or <strong>← / → / A / D</strong> &bull; Launch/Action: <strong>Space / Click</strong> &bull; Pause: <strong>P</strong>
+              </div>
             </div>
+          </div>
 
-            <div class="overlay-buttons">
-              <button id="btn-start" class="btn btn-primary btn-large">
-                START GAME (SPACE)
-              </button>
-              <button id="btn-open-editor-overlay" class="btn btn-secondary">
-                🛠️ Build Custom Level
-              </button>
+          <!-- Custom Level Editor Modal (Block Breaker) -->
+          <div id="editor-modal" class="overlay hidden">
+            <div class="overlay-card editor-card">
+              <div class="editor-header">
+                <h3>🛠️ Block Breaker Level Editor</h3>
+                <button id="btn-close-editor" class="btn btn-icon">✕</button>
+              </div>
+              <p class="editor-instructions">
+                Pick a brick type below, then click or drag across the grid to design your own stage.
+              </p>
+
+              <div class="palette" id="editor-palette">
+                <button class="palette-btn active" data-type="1">🟦 1-Hit Brick</button>
+                <button class="palette-btn" data-type="2">🟧 2-Hit Armor</button>
+                <button class="palette-btn" data-type="3">🟪 3-Hit Heavy</button>
+                <button class="palette-btn" data-type="4">💥 TNT Bomb</button>
+                <button class="palette-btn" data-type="9">⬛ Steel Wall</button>
+                <button class="palette-btn" data-type="0">🧹 Eraser</button>
+              </div>
+
+              <div id="editor-grid" class="editor-grid"></div>
+
+              <div class="editor-actions">
+                <button id="btn-clear-grid" class="btn btn-secondary">Clear Grid</button>
+                <button id="btn-mirror-grid" class="btn btn-secondary">Mirror Left → Right</button>
+                <button id="btn-play-custom" class="btn btn-primary">▶️ Play Custom Stage</button>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div class="controls-hint">
-              <span><strong>Mouse</strong> or <strong>← / → / A / D</strong> to Move Paddle</span>
-              <span>&bull;</span>
-              <span><strong>Space / Click</strong> to Launch Ball &amp; Fire Lasers</span>
-              <span>&bull;</span>
-              <span><strong>P</strong> to Pause</span>
+      <!-- Right: Live Game Customizer Panel -->
+      <aside class="customizer-panel">
+        <div class="panel-header">
+          <span class="panel-tag">LIVE TUNING</span>
+          <h2 id="customizer-title">🎛️ Game Options</h2>
+          <p id="customizer-subtitle">Changes apply immediately!</p>
+        </div>
+
+        <!-- 1. BLOCK BREAKER CUSTOMIZER -->
+        <div class="customizer-group" id="custom-breakout">
+          <div class="control-block">
+            <div class="control-label-row">
+              <label for="opt-bb-speed">Ball Speed</label>
+              <span class="badge-val" id="val-bb-speed">6.5</span>
+            </div>
+            <input type="range" id="opt-bb-speed" min="4" max="11" step="0.5" value="6.5" />
+          </div>
+
+          <div class="control-block">
+            <label>Paddle Size</label>
+            <div class="segmented-row" id="opt-bb-paddle-size">
+              <button class="seg-btn" data-val="92">Compact</button>
+              <button class="seg-btn active" data-val="128">Normal</button>
+              <button class="seg-btn" data-val="172">Wide</button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Paddle Color</label>
+            <div class="swatch-row" id="opt-bb-color">
+              <button class="swatch active" data-color="#38bdf8" style="background:#38bdf8" title="Sky Blue"></button>
+              <button class="swatch" data-color="#34d399" style="background:#34d399" title="Mint Green"></button>
+              <button class="swatch" data-color="#fb7185" style="background:#fb7185" title="Coral Pink"></button>
+              <button class="swatch" data-color="#fbbf24" style="background:#fbbf24" title="Arcade Gold"></button>
+              <button class="swatch" data-color="#a78bfa" style="background:#a78bfa" title="Lavender"></button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Power-Up Drop Rate</label>
+            <div class="segmented-row" id="opt-bb-powerups">
+              <button class="seg-btn" data-val="0.10">Low</button>
+              <button class="seg-btn active" data-val="0.24">Normal</button>
+              <button class="seg-btn" data-val="0.50">Chaos!</button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Select Stage</label>
+            <div class="stage-grid">
+              <button class="stage-btn active" data-level="0">Stage 1</button>
+              <button class="stage-btn" data-level="1">Stage 2</button>
+              <button class="stage-btn" data-level="2">Stage 3</button>
+              <button class="stage-btn" data-level="3">Stage 4</button>
+              <button class="stage-btn" data-level="4">Stage 5</button>
+            </div>
+            <button id="btn-editor" class="btn btn-secondary btn-full" style="margin-top:8px;">
+              🛠️ Open Level Editor
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. SNAKE CUSTOMIZER -->
+        <div class="customizer-group hidden" id="custom-snake">
+          <div class="control-block">
+            <label>Snake Color</label>
+            <div class="swatch-row" id="opt-snake-color">
+              <button class="swatch active" data-color="#34d399" style="background:#34d399" title="Mint Green"></button>
+              <button class="swatch" data-color="#38bdf8" style="background:#38bdf8" title="Sky Blue"></button>
+              <button class="swatch" data-color="#fb7185" style="background:#fb7185" title="Coral Pink"></button>
+              <button class="swatch" data-color="#fbbf24" style="background:#fbbf24" title="Arcade Gold"></button>
+              <button class="swatch" data-color="#a78bfa" style="background:#a78bfa" title="Lavender"></button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Movement Speed</label>
+            <div class="segmented-row" id="opt-snake-speed">
+              <button class="seg-btn" data-val="chill">Chill</button>
+              <button class="seg-btn active" data-val="normal">Normal</button>
+              <button class="seg-btn" data-val="fast">Fast</button>
+              <button class="seg-btn" data-val="hyper">Hyper</button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Arena Wall Mode</label>
+            <div class="segmented-row" id="opt-snake-walls">
+              <button class="seg-btn active" data-val="solid">Solid Walls</button>
+              <button class="seg-btn" data-val="portal">Portal Wrap</button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Fruits on Board</label>
+            <div class="segmented-row" id="opt-snake-fruits">
+              <button class="seg-btn active" data-val="1">1 Fruit</button>
+              <button class="seg-btn" data-val="3">3 Fruits</button>
+              <button class="seg-btn" data-val="5">5 Feast!</button>
             </div>
           </div>
         </div>
 
-        <!-- Custom Level Editor Modal -->
-        <div id="editor-modal" class="overlay hidden">
-          <div class="overlay-card editor-card">
-            <div class="editor-header">
-              <h2>🛠️ Custom Level Editor</h2>
-              <button id="btn-close-editor" class="btn btn-icon">✕</button>
+        <!-- 3. PONG CUSTOMIZER -->
+        <div class="customizer-group hidden" id="custom-pong">
+          <div class="control-block">
+            <label>Match Mode</label>
+            <div class="segmented-row" id="opt-pong-mode">
+              <button class="seg-btn active" data-val="1p">1P vs AI</button>
+              <button class="seg-btn" data-val="2p">2P Keyboard</button>
             </div>
-            <p class="editor-instructions">
-              Select a brick type below, then click or drag across the grid to paint your level!
-            </p>
+          </div>
 
-            <div class="palette" id="editor-palette">
-              <button class="palette-btn active" data-type="1">🟦 Standard (1 HP)</button>
-              <button class="palette-btn" data-type="2">🟧 Armored (2 HP)</button>
-              <button class="palette-btn" data-type="3">🟪 Heavy (3 HP)</button>
-              <button class="palette-btn" data-type="4">💥 Explosive TNT</button>
-              <button class="palette-btn" data-type="9">⬛ Indestructible Steel</button>
-              <button class="palette-btn" data-type="0">🧹 Eraser</button>
+          <div class="control-block" id="pong-ai-block">
+            <label>AI Difficulty</label>
+            <div class="segmented-row" id="opt-pong-ai">
+              <button class="seg-btn" data-val="easy">Easy</button>
+              <button class="seg-btn active" data-val="medium">Medium</button>
+              <button class="seg-btn" data-val="hard">Pro AI</button>
             </div>
+          </div>
 
-            <div id="editor-grid" class="editor-grid"></div>
+          <div class="control-block">
+            <div class="control-label-row">
+              <label for="opt-pong-speed">Serve Ball Speed</label>
+              <span class="badge-val" id="val-pong-speed">7</span>
+            </div>
+            <input type="range" id="opt-pong-speed" min="5" max="11" step="0.5" value="7" />
+          </div>
 
-            <div class="editor-actions">
-              <button id="btn-clear-grid" class="btn btn-secondary">Clear All</button>
-              <button id="btn-mirror-grid" class="btn btn-secondary">Mirror Left → Right</button>
-              <button id="btn-play-custom" class="btn btn-primary">▶️ Play Custom Level</button>
+          <div class="control-block">
+            <label>Player 1 Paddle Color</label>
+            <div class="swatch-row" id="opt-pong-color">
+              <button class="swatch active" data-color="#38bdf8" style="background:#38bdf8"></button>
+              <button class="swatch" data-color="#34d399" style="background:#34d399"></button>
+              <button class="swatch" data-color="#fbbf24" style="background:#fbbf24"></button>
+              <button class="swatch" data-color="#a78bfa" style="background:#a78bfa"></button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Points to Win</label>
+            <div class="segmented-row" id="opt-pong-win">
+              <button class="seg-btn" data-val="5">5 Pts</button>
+              <button class="seg-btn active" data-val="7">7 Pts</button>
+              <button class="seg-btn" data-val="11">11 Pts</button>
             </div>
           </div>
         </div>
-      </div>
-    </main>
 
-    <!-- Bottom Level Select & Info -->
-    <footer class="bottom-bar">
-      <div class="level-selector">
-        <span class="footer-label">SELECT STAGE:</span>
-        <button class="stage-btn active" data-level="0">1. Classic Neon</button>
-        <button class="stage-btn" data-level="1">2. Twin Citadels</button>
-        <button class="stage-btn" data-level="2">3. Chain Reaction</button>
-        <button class="stage-btn" data-level="3">4. Cyber Invader</button>
-        <button class="stage-btn" data-level="4">5. Core Reactor</button>
-      </div>
-      <div class="footer-meta">
-        Built with Vanilla JS ES6 Modules &amp; HTML5 Canvas
-      </div>
-    </footer>
+        <!-- 4. SPACE DEFENDER CUSTOMIZER -->
+        <div class="customizer-group hidden" id="custom-invaders">
+          <div class="control-block">
+            <label>Starfighter Color</label>
+            <div class="swatch-row" id="opt-inv-color">
+              <button class="swatch active" data-color="#a78bfa" style="background:#a78bfa"></button>
+              <button class="swatch" data-color="#38bdf8" style="background:#38bdf8"></button>
+              <button class="swatch" data-color="#34d399" style="background:#34d399"></button>
+              <button class="swatch" data-color="#fbbf24" style="background:#fbbf24"></button>
+              <button class="swatch" data-color="#fb7185" style="background:#fb7185"></button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Weapon System</label>
+            <div class="segmented-row" id="opt-inv-weapon">
+              <button class="seg-btn active" data-val="normal">Standard</button>
+              <button class="seg-btn" data-val="rapid">Rapid</button>
+              <button class="seg-btn" data-val="twin">Twin Laser</button>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <label>Alien Fleet Speed</label>
+            <div class="segmented-row" id="opt-inv-speed">
+              <button class="seg-btn" data-val="0.75">Chill</button>
+              <button class="seg-btn active" data-val="1">Normal</button>
+              <button class="seg-btn" data-val="1.45">Blitz</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-to-box" id="sidebar-howto">
+          <h4>💡 Quick Tip</h4>
+          <p id="howto-text">
+            Hit the ball with the edges of your paddle to angle your shots toward hard-to-reach bricks!
+          </p>
+        </div>
+      </aside>
+    </div>
   </div>
 
   <script src="src/audio.js"></script>
   <script src="src/particles.js"></script>
   <script src="src/levels.js"></script>
   <script src="src/entities.js"></script>
+  <script src="src/snake.js"></script>
+  <script src="src/pong.js"></script>
+  <script src="src/invaders.js"></script>
   <script src="src/game.js"></script>
 </body>
 </html>

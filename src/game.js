@@ -1,15 +1,26 @@
-const HIGH_SCORE_KEY = 'neon_breakout_highscore';
+/**
+ * Game Cartridge #1: Block Breaker (Breakout)
+ * + Master Arcade Playground Hub Controller
+ */
 
-class NeonBreakoutGame {
-  constructor() {
-    this.canvas = document.getElementById('game-canvas');
-    this.ctx = this.canvas.getContext('2d');
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+class BreakoutGame {
+  constructor(canvas, sound, effects, onHudUpdate, onStateChange) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.width = canvas.width;
+    this.height = canvas.height;
+    this.sound = sound;
+    this.effects = effects;
+    this.onHudUpdate = onHudUpdate;
+    this.onStateChange = onStateChange;
 
-    this.sound = new SoundEngine();
-    this.effects = new EffectsManager();
     this.paddle = new Paddle(this.width, this.height);
+    this.config = {
+      ballSpeed: 6.5,
+      paddleBaseWidth: 128,
+      paddleColor: '#38bdf8',
+      powerUpChance: 0.24,
+    };
 
     this.balls = [];
     this.bricks = [];
@@ -17,78 +28,637 @@ class NeonBreakoutGame {
     this.lasers = [];
 
     this.score = 0;
-    this.highScore = Number(localStorage.getItem(HIGH_SCORE_KEY) || 0);
+    this.highScore = Number(localStorage.getItem('neon_breakout_highscore') || 0);
     this.lives = 3;
     this.combo = 1;
     this.currentLevelIndex = 0;
     this.isCustomLevel = false;
 
-    // State: 'MENU' | 'PLAYING' | 'PAUSED' | 'LEVEL_CLEAR' | 'GAME_OVER' | 'VICTORY'
-    this.state = 'MENU';
     this.keys = { left: false, right: false };
-
-    // Timed Power-up Timers (in frames @ 60fps)
-    this.timers = {
-      wide: 0,
-      laser: 0,
-      fire: 0,
-    };
+    this.timers = { wide: 0, laser: 0, fire: 0 };
     this.laserCooldown = 0;
 
-    this.bindUI();
-    this.initLevelEditor();
     this.loadStage(0);
-    this.updateHUD();
-
-    requestAnimationFrame(() => this.loop());
   }
 
-  bindUI() {
-    // Keyboard controls
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = true;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = true;
+  applyConfig(newConfig) {
+    Object.assign(this.config, newConfig);
+    this.paddle.color = this.config.paddleColor;
+    this.paddle.baseWidth = Number(this.config.paddleBaseWidth);
+    if (this.timers.wide === 0) {
+      this.paddle.width = this.paddle.baseWidth;
+    }
+    this.balls.forEach((b) => b.setSpeed(Number(this.config.ballSpeed)));
+    this.notifyHud();
+  }
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        if (this.state === 'MENU' || this.state === 'LEVEL_CLEAR' || this.state === 'GAME_OVER' || this.state === 'VICTORY') {
-          this.handlePrimaryOverlayAction();
-        } else if (this.state === 'PLAYING') {
-          this.launchOrShoot();
+  reset() {
+    this.score = 0;
+    this.lives = 3;
+    if (this.isCustomLevel) {
+      this.buildBricksFromGrid(loadCustomGrid());
+      this.resetTurn();
+    } else {
+      this.loadStage(this.currentLevelIndex);
+    }
+  }
+
+  loadStage(index) {
+    this.currentLevelIndex = index;
+    this.isCustomLevel = false;
+    document.querySelectorAll('.stage-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === index);
+    });
+    const stage = LEVELS[index];
+    this.buildBricksFromGrid(stage.grid);
+    this.resetTurn();
+  }
+
+  loadCustomStage(grid) {
+    this.isCustomLevel = true;
+    this.score = 0;
+    this.lives = 3;
+    document.querySelectorAll('.stage-btn').forEach((b) => b.classList.remove('active'));
+    this.buildBricksFromGrid(grid);
+    this.resetTurn();
+  }
+
+  buildBricksFromGrid(grid) {
+    this.bricks = [];
+    const paddingX = 48;
+    const paddingTop = 54;
+    const gap = 8;
+    const totalAvailableWidth = this.width - paddingX * 2 - gap * (GRID_COLS - 1);
+    const brickWidth = totalAvailableWidth / GRID_COLS;
+    const brickHeight = 24;
+
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        const type = grid[r][c];
+        if (type > 0) {
+          const x = paddingX + c * (brickWidth + gap);
+          const y = paddingTop + r * (brickHeight + gap);
+          this.bricks.push(new Brick(r, c, x, y, brickWidth, brickHeight, type));
         }
       }
+    }
+  }
 
-      if (e.key === 'p' || e.key === 'P') {
-        this.togglePause();
+  resetTurn() {
+    this.paddle.baseWidth = Number(this.config.paddleBaseWidth);
+    this.paddle.color = this.config.paddleColor;
+    this.paddle.reset();
+    this.timers = { wide: 0, laser: 0, fire: 0 };
+    this.powerUps = [];
+    this.lasers = [];
+    this.combo = 1;
+    const speed = Number(this.config.ballSpeed);
+    this.balls = [
+      new Ball(this.paddle.x + this.paddle.width / 2, this.paddle.y - 10, speed),
+    ];
+    this.updatePowerUpHUD();
+    this.notifyHud();
+  }
+
+  handleKeyDown(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = true;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = true;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      this.launchOrShoot();
+    }
+  }
+
+  handleKeyUp(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = false;
+  }
+
+  handleMouseMove(mouseX) {
+    this.paddle.setCenterX(mouseX);
+  }
+
+  handleClick() {
+    this.launchOrShoot();
+  }
+
+  launchOrShoot() {
+    let launchedAny = false;
+    this.balls.forEach((b) => {
+      if (b.attached) {
+        b.launch();
+        launchedAny = true;
+      }
+    });
+    if (launchedAny) {
+      this.sound.paddleHit();
+      return;
+    }
+
+    if (this.paddle.laserActive && this.laserCooldown <= 0) {
+      this.lasers.push(new Laser(this.paddle.x + 7, this.paddle.y - 8));
+      this.lasers.push(new Laser(this.paddle.x + this.paddle.width - 7, this.paddle.y - 8));
+      this.laserCooldown = 15;
+      this.sound.laserShoot();
+    }
+  }
+
+  applyPowerUp(typeId) {
+    this.sound.powerUp();
+
+    if (typeId === 'MULTI') {
+      const sourceBall = this.balls[0];
+      if (sourceBall && this.balls.length < 6) {
+        for (const offset of [-0.35, 0.35]) {
+          const clone = new Ball(sourceBall.x, sourceBall.y, sourceBall.speed);
+          clone.attached = false;
+          clone.fireball = this.timers.fire > 0;
+          const angle = Math.atan2(sourceBall.vy, sourceBall.vx) + offset;
+          clone.vx = Math.cos(angle) * clone.speed;
+          clone.vy = -Math.abs(Math.sin(angle) * clone.speed);
+          this.balls.push(clone);
+        }
+      }
+    } else if (typeId === 'WIDE') {
+      this.paddle.width = Math.min(240, this.paddle.baseWidth + 56);
+      this.timers.wide = 60 * 12;
+    } else if (typeId === 'LASER') {
+      this.paddle.laserActive = true;
+      this.timers.laser = 60 * 10;
+    } else if (typeId === 'FIRE') {
+      this.timers.fire = 60 * 8;
+      this.balls.forEach((b) => (b.fireball = true));
+    } else if (typeId === 'LIFE') {
+      this.lives = Math.min(5, this.lives + 1);
+    }
+
+    this.updatePowerUpHUD();
+    this.notifyHud();
+  }
+
+  detonateBrick(sourceBrick) {
+    this.sound.explosion();
+    this.effects.triggerShake(10, 6);
+    this.effects.spawnExplosion(
+      sourceBrick.x + sourceBrick.width / 2,
+      sourceBrick.y + sourceBrick.height / 2,
+      '#fb7185',
+      24,
+      1.4
+    );
+
+    this.bricks.forEach((other) => {
+      if (!other.alive || other === sourceBrick) return;
+      const rowDist = Math.abs(other.row - sourceBrick.row);
+      const colDist = Math.abs(other.col - sourceBrick.col);
+      if (rowDist <= 1 && colDist <= 1) {
+        const destroyed = other.hit(true);
+        if (destroyed) {
+          this.onBrickDestroyed(other);
+        }
+      }
+    });
+  }
+
+  onBrickDestroyed(brick) {
+    const cx = brick.x + brick.width / 2;
+    const cy = brick.y + brick.height / 2;
+    const points = 50 * this.combo;
+    this.score += points;
+
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      localStorage.setItem('neon_breakout_highscore', String(this.highScore));
+    }
+
+    this.effects.spawnExplosion(cx, cy, brick.getColor(), 14, 1);
+    this.effects.spawnText(
+      cx,
+      cy,
+      `+${points}${this.combo > 1 ? ` (${this.combo}x)` : ''}`,
+      brick.getColor()
+    );
+
+    if (Math.random() < Number(this.config.powerUpChance)) {
+      this.powerUps.push(new PowerUp(cx, cy));
+    }
+
+    if (brick.explosive) {
+      this.detonateBrick(brick);
+    }
+  }
+
+  notifyHud() {
+    this.onHudUpdate({
+      score: this.score,
+      highScore: this.highScore,
+      stat1Label: 'COMBO',
+      stat1Value: `${this.combo}x`,
+      stat2Label: 'LIVES',
+      stat2Value: '♥'.repeat(Math.max(0, this.lives)),
+      stat3Label: 'STAGE',
+      stat3Value: this.isCustomLevel ? 'CUSTOM' : `${this.currentLevelIndex + 1} / ${LEVELS.length}`,
+    });
+  }
+
+  updatePowerUpHUD() {
+    const bar = document.getElementById('powerup-bar');
+    if (!bar) return;
+    bar.innerHTML = '';
+    const items = [
+      { key: 'wide', label: '↔️ Wide', color: '#34d399' },
+      { key: 'laser', label: '🔫 Laser (Space/Click)', color: '#fb7185' },
+      { key: 'fire', label: '🔥 Fireball', color: '#fb923c' },
+    ];
+    items.forEach((item) => {
+      const frames = this.timers[item.key];
+      if (frames > 0) {
+        const secs = Math.ceil(frames / 60);
+        const tag = document.createElement('div');
+        tag.className = 'active-powerup-tag';
+        tag.style.borderColor = item.color;
+        tag.textContent = `${item.label}: ${secs}s`;
+        bar.appendChild(tag);
+      }
+    });
+  }
+
+  update() {
+    if (this.keys.left) this.paddle.moveLeft();
+    if (this.keys.right) this.paddle.moveRight();
+    if (this.laserCooldown > 0) this.laserCooldown--;
+
+    let timerChanged = false;
+    if (this.timers.wide > 0) {
+      this.timers.wide--;
+      if (this.timers.wide === 0) {
+        this.paddle.width = this.paddle.baseWidth;
+        timerChanged = true;
+      }
+    }
+    if (this.timers.laser > 0) {
+      this.timers.laser--;
+      if (this.timers.laser === 0) {
+        this.paddle.laserActive = false;
+        timerChanged = true;
+      }
+    }
+    if (this.timers.fire > 0) {
+      this.timers.fire--;
+      if (this.timers.fire === 0) {
+        this.balls.forEach((b) => (b.fireball = false));
+        timerChanged = true;
+      }
+    }
+    if (timerChanged || (this.timers.wide + this.timers.laser + this.timers.fire) % 30 === 0) {
+      this.updatePowerUpHUD();
+    }
+
+    this.balls.forEach((ball) => {
+      const event = ball.update(this.paddle, this.width);
+      if (event === 'wall') this.sound.wallHit();
+
+      if (
+        !ball.attached &&
+        ball.vy > 0 &&
+        ball.x + ball.radius >= this.paddle.x &&
+        ball.x - ball.radius <= this.paddle.x + this.paddle.width &&
+        ball.y + ball.radius >= this.paddle.y &&
+        ball.y - ball.radius <= this.paddle.y + this.paddle.height
+      ) {
+        const hitOffset =
+          (ball.x - (this.paddle.x + this.paddle.width / 2)) / (this.paddle.width / 2);
+        const maxBounceAngle = (Math.PI * 66) / 180;
+        const bounceAngle = hitOffset * maxBounceAngle;
+
+        ball.vx = Math.sin(bounceAngle) * ball.speed;
+        ball.vy = -Math.cos(bounceAngle) * ball.speed;
+        ball.y = this.paddle.y - ball.radius - 1;
+        this.combo = 1;
+        this.sound.paddleHit();
+        this.notifyHud();
+      }
+
+      for (const brick of this.bricks) {
+        if (!brick.alive) continue;
+
+        const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
+        const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
+        const dx = ball.x - closestX;
+        const dy = ball.y - closestY;
+
+        if (dx * dx + dy * dy <= ball.radius * ball.radius) {
+          if (!ball.fireball || brick.indestructible) {
+            const overlapLeft = ball.x + ball.radius - brick.x;
+            const overlapRight = brick.x + brick.width - (ball.x - ball.radius);
+            const overlapTop = ball.y + ball.radius - brick.y;
+            const overlapBottom = brick.y + brick.height - (ball.y - ball.radius);
+            const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+            if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+              ball.vx = -ball.vx;
+            } else {
+              ball.vy = -ball.vy;
+            }
+          }
+
+          if (brick.indestructible) {
+            this.sound.wallHit();
+            this.effects.spawnExplosion(closestX, closestY, '#cbd5e1', 5, 0.6);
+          } else {
+            const destroyed = brick.hit(ball.fireball);
+            if (destroyed) {
+              this.sound.brickBreak(this.combo);
+              this.effects.triggerShake(4, 3);
+              this.onBrickDestroyed(brick);
+              this.combo = Math.min(8, this.combo + 1);
+            } else {
+              this.sound.brickDamage(this.combo);
+              this.score += 15 * this.combo;
+              this.effects.spawnExplosion(closestX, closestY, brick.getColor(), 6, 0.7);
+            }
+            this.notifyHud();
+          }
+          break;
+        }
       }
     });
 
-    window.addEventListener('keyup', (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = false;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = false;
-    });
+    this.balls = this.balls.filter((b) => b.y - b.radius <= this.height);
+    if (this.balls.length === 0) {
+      this.lives--;
+      this.sound.loseLife();
+      this.effects.triggerShake(9, 5);
+      this.notifyHud();
 
-    // Mouse / Touch controls on Canvas
-    this.canvas.addEventListener('mousemove', (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.width / rect.width;
-      const mouseX = (e.clientX - rect.left) * scaleX;
-      this.paddle.setCenterX(mouseX);
-    });
+      if (this.lives <= 0) {
+        this.onStateChange('GAME_OVER', {
+          subtitle: 'BLOCK BREAKER // OUT OF LIVES',
+          title: 'GAME OVER',
+          desc: `Final Score: ${this.score.toLocaleString()}. Ready to go again?`,
+          buttonText: 'PLAY AGAIN (SPACE)',
+        });
+      } else {
+        this.resetTurn();
+      }
+      return;
+    }
 
-    this.canvas.addEventListener('click', () => {
-      if (this.state === 'PLAYING') {
-        this.launchOrShoot();
+    this.powerUps.forEach((p) => {
+      p.update(this.height);
+      if (
+        p.alive &&
+        p.x + p.width / 2 >= this.paddle.x &&
+        p.x - p.width / 2 <= this.paddle.x + this.paddle.width &&
+        p.y + p.height / 2 >= this.paddle.y &&
+        p.y - p.height / 2 <= this.paddle.y + this.paddle.height
+      ) {
+        p.alive = false;
+        this.effects.spawnText(
+          this.paddle.x + this.paddle.width / 2,
+          this.paddle.y - 12,
+          p.info.label,
+          p.info.color
+        );
+        this.applyPowerUp(p.info.id);
       }
     });
+    this.powerUps = this.powerUps.filter((p) => p.alive);
 
-    // Buttons
+    this.lasers.forEach((laser) => {
+      laser.update();
+      for (const brick of this.bricks) {
+        if (!brick.alive) continue;
+        if (
+          laser.x >= brick.x &&
+          laser.x <= brick.x + brick.width &&
+          laser.y >= brick.y &&
+          laser.y <= brick.y + brick.height
+        ) {
+          laser.alive = false;
+          if (!brick.indestructible) {
+            const destroyed = brick.hit(false);
+            if (destroyed) {
+              this.sound.brickBreak(this.combo);
+              this.onBrickDestroyed(brick);
+            } else {
+              this.sound.brickDamage(this.combo);
+            }
+            this.notifyHud();
+          }
+          break;
+        }
+      }
+    });
+    this.lasers = this.lasers.filter((l) => l.alive);
+
+    const remainingBreakable = this.bricks.some((b) => b.alive && !b.indestructible);
+    if (!remainingBreakable) {
+      this.sound.levelWin();
+      if (this.isCustomLevel || this.currentLevelIndex >= LEVELS.length - 1) {
+        this.onStateChange('VICTORY', {
+          subtitle: 'BLOCK BREAKER // ALL STAGES CLEARED',
+          title: 'VICTORY!',
+          desc: `Awesome run! You finished with ${this.score.toLocaleString()} points!`,
+          buttonText: 'PLAY AGAIN (SPACE)',
+        });
+      } else {
+        const nextIdx = this.currentLevelIndex + 1;
+        this.loadStage(nextIdx);
+        this.onStateChange('LEVEL_CLEAR', {
+          subtitle: `STAGE ${nextIdx} UNLOCKED`,
+          title: LEVELS[nextIdx].name.toUpperCase(),
+          desc: LEVELS[nextIdx].subtitle,
+          buttonText: 'START STAGE (SPACE)',
+        });
+      }
+    }
+  }
+
+  draw() {
+    const ctx = this.ctx;
+    ctx.fillStyle = '#0d1224';
+    ctx.fillRect(0, 0, this.width, this.height);
+
+    // Subtle arcade dot matrix background
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.06)';
+    for (let x = 30; x < this.width; x += 45) {
+      for (let y = 30; y < this.height; y += 45) {
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
+
+    this.bricks.forEach((b) => b.draw(ctx));
+    this.powerUps.forEach((p) => p.draw(ctx));
+    this.lasers.forEach((l) => l.draw(ctx));
+    this.paddle.draw(ctx);
+    this.balls.forEach((b) => b.draw(ctx));
+  }
+}
+
+/**
+ * Master Arcade Playground Hub
+ * Manages switching between games, shared rendering loop, overlay states, and live customizer controls.
+ */
+class ArcadePlaygroundHub {
+  constructor() {
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.sound = new SoundEngine();
+    this.effects = new EffectsManager();
+
+    this.state = 'MENU'; // 'MENU' | 'PLAYING' | 'PAUSED' | 'LEVEL_CLEAR' | 'GAME_OVER' | 'VICTORY'
+    this.activeGameKey = 'breakout';
+    this.lastTime = performance.now();
+
+    const hudCallback = (data) => this.renderHUD(data);
+    const stateCallback = (newState, modalInfo) => this.handleCartridgeState(newState, modalInfo);
+
+    this.cartridges = {
+      breakout: new BreakoutGame(this.canvas, this.sound, this.effects, hudCallback, stateCallback),
+      snake: new SnakeGame(this.canvas, this.sound, this.effects, hudCallback, stateCallback),
+      pong: new PongGame(this.canvas, this.sound, this.effects, hudCallback, stateCallback),
+      invaders: new SpaceDefenderGame(this.canvas, this.sound, this.effects, hudCallback, stateCallback),
+    };
+
+    this.gameMeta = {
+      breakout: {
+        badge: 'ARCADE CARTRIDGE #1',
+        title: 'BLOCK BREAKER',
+        desc: 'Bounce the ball, chain combos, collect power-ups, or tune your paddle and speed on the right!',
+        controls: 'Move: <strong>Mouse</strong> or <strong>← / → / A / D</strong> &bull; Launch/Laser: <strong>Space / Click</strong> &bull; Pause: <strong>P</strong>',
+        tip: 'Hit the ball near the edges of your paddle to angle your shots toward tough bricks!',
+      },
+      snake: {
+        badge: 'ARCADE CARTRIDGE #2',
+        title: 'CYBER SNAKE',
+        desc: 'Collect apples, golden berries, and plums to grow longer without crashing into your tail!',
+        controls: 'Steer: <strong>Arrow Keys</strong> or <strong>W / A / S / D</strong> &bull; Pause: <strong>P</strong>',
+        tip: 'Try enabling "Portal Wrap" and "5 Feast!" in the right sidebar for a high-scoring frenzy!',
+      },
+      pong: {
+        badge: 'ARCADE CARTRIDGE #3',
+        title: 'PONG ARENA',
+        desc: 'Fast-paced rally action! Face off against the adaptive AI or play 2-Player on one keyboard.',
+        controls: '1P: <strong>Mouse / W / S / Arrows</strong> &bull; 2P Mode: <strong>W / S</strong> (Left) vs <strong>↑ / ↓</strong> (Right)',
+        tip: 'Every consecutive paddle hit speeds up the rally—angle your shots to catch the AI off guard!',
+      },
+      invaders: {
+        badge: 'ARCADE CARTRIDGE #4',
+        title: 'SPACE DEFENDER',
+        desc: 'Defend your homeworld from descending alien waves and take cover behind energy bunkers!',
+        controls: 'Move: <strong>Mouse</strong> or <strong>← / → / A / D</strong> &bull; Fire Lasers: <strong>Space / Click</strong>',
+        tip: 'Switch your Weapon System to "Twin Laser" or "Rapid" in the customizer panel for extra firepower!',
+      },
+    };
+
+    this.bindGlobalEvents();
+    this.bindCustomizerControls();
+    this.initLevelEditor();
+    this.switchGame('breakout');
+
+    requestAnimationFrame((t) => this.loop(t));
+  }
+
+  get currentGame() {
+    return this.cartridges[this.activeGameKey];
+  }
+
+  switchGame(gameKey) {
+    this.activeGameKey = gameKey;
+    this.effects.clear();
+    document.getElementById('powerup-bar').innerHTML = '';
+
+    // Highlight active tab
+    document.querySelectorAll('.game-tab').forEach((tab) => {
+      tab.classList.toggle('active', tab.dataset.game === gameKey);
+    });
+
+    // Show matching customizer panel
+    ['breakout', 'snake', 'pong', 'invaders'].forEach((k) => {
+      const panel = document.getElementById(`custom-${k}`);
+      if (panel) panel.classList.toggle('hidden', k !== gameKey);
+    });
+
+    const meta = this.gameMeta[gameKey];
+    document.getElementById('howto-text').textContent = meta.tip;
+    document.getElementById('overlay-controls-hint').innerHTML = meta.controls;
+
+    this.currentGame.reset();
+    this.state = 'MENU';
+    this.showOverlay(meta.badge, meta.title, meta.desc, '▶️ PLAY NOW (SPACE)');
+  }
+
+  renderHUD(data) {
+    document.getElementById('hud-score').textContent = Number(data.score || 0).toLocaleString();
+    document.getElementById('hud-highscore').textContent = Number(data.highScore || 0).toLocaleString();
+    document.getElementById('hud-stat1-label').textContent = data.stat1Label || 'STAT';
+    document.getElementById('hud-stat1-val').textContent = data.stat1Value || '-';
+    document.getElementById('hud-stat2-label').textContent = data.stat2Label || 'STAT';
+    document.getElementById('hud-stat2-val').textContent = data.stat2Value || '-';
+    document.getElementById('hud-stat3-label').textContent = data.stat3Label || 'STAT';
+    document.getElementById('hud-stat3-val').textContent = data.stat3Value || '-';
+  }
+
+  handleCartridgeState(newState, modalInfo) {
+    this.state = newState;
+    if (modalInfo) {
+      this.showOverlay(modalInfo.subtitle, modalInfo.title, modalInfo.desc, modalInfo.buttonText);
+    }
+  }
+
+  showOverlay(subtitle, title, desc, buttonText) {
+    document.getElementById('overlay-subtitle').textContent = subtitle;
+    document.getElementById('overlay-title').textContent = title;
+    document.getElementById('overlay-desc').textContent = desc;
+    document.getElementById('btn-start').textContent = buttonText;
+    document.getElementById('overlay').classList.add('active');
+  }
+
+  startOrResume() {
+    this.sound.init();
+    if (this.state === 'GAME_OVER' || this.state === 'VICTORY') {
+      this.currentGame.reset();
+    }
+    this.state = 'PLAYING';
+    document.getElementById('overlay').classList.remove('active');
+  }
+
+  togglePause() {
+    if (this.state === 'PLAYING') {
+      this.state = 'PAUSED';
+      this.showOverlay(
+        'ARCADE PAUSED',
+        'GAME PAUSED',
+        'Adjust your live settings on the right or press Space to jump back in!',
+        '▶️ RESUME (SPACE)'
+      );
+    } else if (this.state === 'PAUSED') {
+      this.startOrResume();
+    }
+  }
+
+  bindGlobalEvents() {
+    // Tab switching
+    document.querySelectorAll('.game-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        this.switchGame(tab.dataset.game);
+      });
+    });
+
+    // Header buttons
     document.getElementById('btn-start').addEventListener('click', () => {
-      this.handlePrimaryOverlayAction();
+      this.startOrResume();
     });
 
     document.getElementById('btn-pause').addEventListener('click', () => {
       this.togglePause();
+    });
+
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      this.effects.clear();
+      this.currentGame.reset();
+      this.startOrResume();
     });
 
     document.getElementById('btn-sound').addEventListener('click', (e) => {
@@ -96,16 +666,141 @@ class NeonBreakoutGame {
       e.currentTarget.textContent = enabled ? '🔊' : '🔇';
     });
 
-    // Stage selector buttons
+    // Keyboard routing
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'p' || e.key === 'P') {
+        this.togglePause();
+        return;
+      }
+      if (e.code === 'Space' && this.state !== 'PLAYING') {
+        e.preventDefault();
+        this.startOrResume();
+        return;
+      }
+      if (this.state === 'PLAYING' && this.currentGame.handleKeyDown) {
+        this.currentGame.handleKeyDown(e);
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (this.currentGame.handleKeyUp) {
+        this.currentGame.handleKeyUp(e);
+      }
+    });
+
+    // Mouse routing
+    this.canvas.addEventListener('mousemove', (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+      if (this.currentGame.handleMouseMove) {
+        this.currentGame.handleMouseMove(mouseX, mouseY);
+      }
+    });
+
+    this.canvas.addEventListener('click', () => {
+      if (this.state === 'PLAYING' && this.currentGame.handleClick) {
+        this.currentGame.handleClick();
+      }
+    });
+  }
+
+  bindCustomizerControls() {
+    // Helper for segmented button rows
+    const bindSegmented = (containerId, callback) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.querySelectorAll('.seg-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          callback(btn.dataset.val);
+        });
+      });
+    };
+
+    // Helper for color swatch rows
+    const bindSwatches = (containerId, callback) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.querySelectorAll('.swatch').forEach((sw) => {
+        sw.addEventListener('click', () => {
+          container.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active'));
+          sw.classList.add('active');
+          callback(sw.dataset.color);
+        });
+      });
+    };
+
+    // 1. Block Breaker Options
+    const bbSpeed = document.getElementById('opt-bb-speed');
+    bbSpeed.addEventListener('input', () => {
+      document.getElementById('val-bb-speed').textContent = bbSpeed.value;
+      this.cartridges.breakout.applyConfig({ ballSpeed: Number(bbSpeed.value) });
+    });
+    bindSegmented('opt-bb-paddle-size', (val) => {
+      this.cartridges.breakout.applyConfig({ paddleBaseWidth: Number(val) });
+    });
+    bindSwatches('opt-bb-color', (color) => {
+      this.cartridges.breakout.applyConfig({ paddleColor: color });
+    });
+    bindSegmented('opt-bb-powerups', (val) => {
+      this.cartridges.breakout.applyConfig({ powerUpChance: Number(val) });
+    });
     document.querySelectorAll('.stage-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const idx = Number(btn.dataset.level);
-        this.isCustomLevel = false;
-        this.score = 0;
-        this.lives = 3;
-        this.loadStage(idx);
-        this.startPlaying();
+        this.cartridges.breakout.loadStage(Number(btn.dataset.level));
+        this.startOrResume();
       });
+    });
+
+    // 2. Snake Options
+    bindSwatches('opt-snake-color', (color) => {
+      this.cartridges.snake.applyConfig({ snakeColor: color });
+    });
+    bindSegmented('opt-snake-speed', (val) => {
+      this.cartridges.snake.applyConfig({ speedLevel: val });
+      this.cartridges.snake.notifyHud();
+    });
+    bindSegmented('opt-snake-walls', (val) => {
+      this.cartridges.snake.applyConfig({ wrapWalls: val === 'portal' });
+      this.cartridges.snake.notifyHud();
+    });
+    bindSegmented('opt-snake-fruits', (val) => {
+      this.cartridges.snake.applyConfig({ fruitCount: Number(val) });
+    });
+
+    // 3. Pong Options
+    bindSegmented('opt-pong-mode', (val) => {
+      document.getElementById('pong-ai-block').style.display = val === '1p' ? 'flex' : 'none';
+      this.cartridges.pong.applyConfig({ mode: val });
+    });
+    bindSegmented('opt-pong-ai', (val) => {
+      this.cartridges.pong.applyConfig({ aiDifficulty: val });
+    });
+    const pongSpeed = document.getElementById('opt-pong-speed');
+    pongSpeed.addEventListener('input', () => {
+      document.getElementById('val-pong-speed').textContent = pongSpeed.value;
+      this.cartridges.pong.applyConfig({ ballSpeed: Number(pongSpeed.value) });
+    });
+    bindSwatches('opt-pong-color', (color) => {
+      this.cartridges.pong.applyConfig({ paddleColor: color });
+    });
+    bindSegmented('opt-pong-win', (val) => {
+      this.cartridges.pong.applyConfig({ winScore: Number(val) });
+    });
+
+    // 4. Space Defender Options
+    bindSwatches('opt-inv-color', (color) => {
+      this.cartridges.invaders.applyConfig({ shipColor: color });
+    });
+    bindSegmented('opt-inv-weapon', (val) => {
+      this.cartridges.invaders.applyConfig({ fireRate: val });
+    });
+    bindSegmented('opt-inv-speed', (val) => {
+      this.cartridges.invaders.applyConfig({ alienSpeed: Number(val) });
     });
   }
 
@@ -153,7 +848,7 @@ class NeonBreakoutGame {
     });
 
     const openEditor = () => {
-      this.state = 'PAUSED';
+      if (this.state === 'PLAYING') this.state = 'PAUSED';
       customGrid = loadCustomGrid();
       renderGrid();
       modal.classList.remove('hidden');
@@ -166,7 +861,6 @@ class NeonBreakoutGame {
     };
 
     document.getElementById('btn-editor').addEventListener('click', openEditor);
-    document.getElementById('btn-open-editor-overlay').addEventListener('click', openEditor);
     document.getElementById('btn-close-editor').addEventListener('click', closeEditor);
 
     document.getElementById('btn-clear-grid').addEventListener('click', () => {
@@ -186,505 +880,35 @@ class NeonBreakoutGame {
     });
 
     document.getElementById('btn-play-custom').addEventListener('click', () => {
-      // Ensure at least one breakable brick exists
       const hasBreakable = customGrid.some((row) => row.some((cell) => cell > 0 && cell !== 9));
-      if (!hasBreakable) {
-        customGrid[0][5] = 1;
-      }
+      if (!hasBreakable) customGrid[0][5] = 1;
       saveCustomGrid(customGrid);
       closeEditor();
-      this.isCustomLevel = true;
-      this.score = 0;
-      this.lives = 3;
-      this.buildBricksFromGrid(customGrid);
-      this.resetTurn();
-      this.startPlaying();
+      this.cartridges.breakout.loadCustomStage(customGrid);
+      this.startOrResume();
     });
   }
 
-  loadStage(index) {
-    this.currentLevelIndex = index;
-    document.querySelectorAll('.stage-btn').forEach((b, i) => {
-      b.classList.toggle('active', i === index && !this.isCustomLevel);
-    });
+  loop(timestamp) {
+    const dtMs = Math.min(50, timestamp - this.lastTime);
+    this.lastTime = timestamp;
 
-    const stage = LEVELS[index];
-    this.buildBricksFromGrid(stage.grid);
-    this.resetTurn();
-    this.updateHUD();
-  }
-
-  buildBricksFromGrid(grid) {
-    this.bricks = [];
-    const paddingX = 48;
-    const paddingTop = 58;
-    const gap = 8;
-    const totalAvailableWidth = this.width - paddingX * 2 - gap * (GRID_COLS - 1);
-    const brickWidth = totalAvailableWidth / GRID_COLS;
-    const brickHeight = 24;
-
-    for (let r = 0; r < GRID_ROWS; r++) {
-      for (let c = 0; c < GRID_COLS; c++) {
-        const type = grid[r][c];
-        if (type > 0) {
-          const x = paddingX + c * (brickWidth + gap);
-          const y = paddingTop + r * (brickHeight + gap);
-          this.bricks.push(new Brick(r, c, x, y, brickWidth, brickHeight, type));
-        }
-      }
-    }
-  }
-
-  resetTurn() {
-    this.paddle.reset();
-    this.timers = { wide: 0, laser: 0, fire: 0 };
-    this.powerUps = [];
-    this.lasers = [];
-    this.combo = 1;
-    const speed = 6.6 + this.currentLevelIndex * 0.35;
-    this.balls = [
-      new Ball(this.paddle.x + this.paddle.width / 2, this.paddle.y - 10, speed),
-    ];
-    this.updatePowerUpHUD();
-    this.updateHUD();
-  }
-
-  startPlaying() {
-    this.sound.init();
-    this.state = 'PLAYING';
-    document.getElementById('overlay').classList.remove('active');
-    this.updateHUD();
-  }
-
-  handlePrimaryOverlayAction() {
-    if (this.state === 'MENU') {
-      this.startPlaying();
-    } else if (this.state === 'PAUSED') {
-      this.startPlaying();
-    } else if (this.state === 'LEVEL_CLEAR') {
-      this.loadStage(this.currentLevelIndex + 1);
-      this.startPlaying();
-    } else if (this.state === 'GAME_OVER' || this.state === 'VICTORY') {
-      this.score = 0;
-      this.lives = 3;
-      if (this.isCustomLevel) {
-        this.buildBricksFromGrid(loadCustomGrid());
-        this.resetTurn();
-      } else {
-        this.loadStage(0);
-      }
-      this.startPlaying();
-    }
-  }
-
-  togglePause() {
-    if (this.state === 'PLAYING') {
-      this.state = 'PAUSED';
-      this.showOverlay(
-        'GAME PAUSED',
-        'PAUSED',
-        'Take a breather! Press Space or click below to jump back in.',
-        'RESUME GAME (SPACE)'
-      );
-    } else if (this.state === 'PAUSED') {
-      this.startPlaying();
-    }
-  }
-
-  showOverlay(subtitle, title, desc, buttonText) {
-    document.getElementById('overlay-subtitle').textContent = subtitle;
-    document.getElementById('overlay-title').textContent = title;
-    document.getElementById('overlay-desc').textContent = desc;
-    document.getElementById('btn-start').textContent = buttonText;
-    document.getElementById('overlay').classList.add('active');
-  }
-
-  launchOrShoot() {
-    let launchedAny = false;
-    this.balls.forEach((b) => {
-      if (b.attached) {
-        b.launch();
-        launchedAny = true;
-      }
-    });
-    if (launchedAny) {
-      this.sound.paddleHit();
-      return;
-    }
-
-    // Fire twin lasers if laser power-up is active
-    if (this.paddle.laserActive && this.laserCooldown <= 0) {
-      this.lasers.push(new Laser(this.paddle.x + 7, this.paddle.y - 8));
-      this.lasers.push(new Laser(this.paddle.x + this.paddle.width - 7, this.paddle.y - 8));
-      this.laserCooldown = 16;
-      this.sound.laserShoot();
-    }
-  }
-
-  applyPowerUp(typeId) {
-    this.sound.powerUp();
-
-    if (typeId === 'MULTI') {
-      const sourceBall = this.balls[0];
-      if (sourceBall && this.balls.length < 6) {
-        for (const offset of [-0.35, 0.35]) {
-          const clone = new Ball(sourceBall.x, sourceBall.y, sourceBall.speed);
-          clone.attached = false;
-          clone.fireball = this.timers.fire > 0;
-          const angle = Math.atan2(sourceBall.vy, sourceBall.vx) + offset;
-          clone.vx = Math.cos(angle) * clone.speed;
-          clone.vy = -Math.abs(Math.sin(angle) * clone.speed);
-          this.balls.push(clone);
-        }
-      }
-    } else if (typeId === 'WIDE') {
-      this.paddle.width = 185;
-      this.timers.wide = 60 * 12; // 12 seconds
-    } else if (typeId === 'LASER') {
-      this.paddle.laserActive = true;
-      this.timers.laser = 60 * 10; // 10 seconds
-    } else if (typeId === 'FIRE') {
-      this.timers.fire = 60 * 8; // 8 seconds
-      this.balls.forEach((b) => (b.fireball = true));
-    } else if (typeId === 'LIFE') {
-      this.lives = Math.min(5, this.lives + 1);
-    }
-
-    this.updatePowerUpHUD();
-    this.updateHUD();
-  }
-
-  detonateBrick(sourceBrick) {
-    this.sound.explosion();
-    this.effects.triggerShake(14, 8);
-    this.effects.spawnExplosion(
-      sourceBrick.x + sourceBrick.width / 2,
-      sourceBrick.y + sourceBrick.height / 2,
-      '#ef4444',
-      32,
-      1.6
-    );
-
-    // Damage all neighbors within 1 grid cell radius
-    this.bricks.forEach((other) => {
-      if (!other.alive || other === sourceBrick) return;
-      const rowDist = Math.abs(other.row - sourceBrick.row);
-      const colDist = Math.abs(other.col - sourceBrick.col);
-      if (rowDist <= 1 && colDist <= 1) {
-        const destroyed = other.hit(true);
-        if (destroyed) {
-          this.onBrickDestroyed(other);
-        }
-      }
-    });
-  }
-
-  onBrickDestroyed(brick) {
-    const cx = brick.x + brick.width / 2;
-    const cy = brick.y + brick.height / 2;
-    const points = 50 * this.combo;
-    this.score += points;
-
-    if (this.score > this.highScore) {
-      this.highScore = this.score;
-      localStorage.setItem(HIGH_SCORE_KEY, String(this.highScore));
-    }
-
-    this.effects.spawnExplosion(cx, cy, brick.getColor(), 18, 1);
-    this.effects.spawnText(cx, cy, `+${points}${this.combo > 1 ? ` (${this.combo}x)` : ''}`, brick.getColor());
-
-    // 22% chance to drop a Power-Up
-    if (Math.random() < 0.22) {
-      this.powerUps.push(new PowerUp(cx, cy));
-    }
-
-    if (brick.explosive) {
-      this.detonateBrick(brick);
-    }
-  }
-
-  update() {
     this.effects.update();
-    if (this.state !== 'PLAYING') return;
-
-    // Move paddle with keyboard
-    if (this.keys.left) this.paddle.moveLeft();
-    if (this.keys.right) this.paddle.moveRight();
-
-    if (this.laserCooldown > 0) this.laserCooldown--;
-
-    // Update power-up durations
-    let timerChanged = false;
-    if (this.timers.wide > 0) {
-      this.timers.wide--;
-      if (this.timers.wide === 0) {
-        this.paddle.width = this.paddle.baseWidth;
-        timerChanged = true;
-      }
-    }
-    if (this.timers.laser > 0) {
-      this.timers.laser--;
-      if (this.timers.laser === 0) {
-        this.paddle.laserActive = false;
-        timerChanged = true;
-      }
-    }
-    if (this.timers.fire > 0) {
-      this.timers.fire--;
-      if (this.timers.fire === 0) {
-        this.balls.forEach((b) => (b.fireball = false));
-        timerChanged = true;
-      }
-    }
-    if (timerChanged || (this.timers.wide + this.timers.laser + this.timers.fire) % 30 === 0) {
-      this.updatePowerUpHUD();
+    if (this.state === 'PLAYING') {
+      this.currentGame.update(dtMs);
     }
 
-    // Update balls
-    this.balls.forEach((ball) => {
-      const event = ball.update(this.paddle, this.width);
-      if (event === 'wall') {
-        this.sound.wallHit();
-      }
-
-      // Paddle collision check
-      if (
-        !ball.attached &&
-        ball.vy > 0 &&
-        ball.x + ball.radius >= this.paddle.x &&
-        ball.x - ball.radius <= this.paddle.x + this.paddle.width &&
-        ball.y + ball.radius >= this.paddle.y &&
-        ball.y - ball.radius <= this.paddle.y + this.paddle.height
-      ) {
-        // Calculate deflection angle based on where the ball hit the paddle (-1 to +1)
-        const hitOffset =
-          (ball.x - (this.paddle.x + this.paddle.width / 2)) / (this.paddle.width / 2);
-        const maxBounceAngle = (Math.PI * 68) / 180; // 68 degrees max
-        const bounceAngle = hitOffset * maxBounceAngle;
-
-        ball.vx = Math.sin(bounceAngle) * ball.speed;
-        ball.vy = -Math.cos(bounceAngle) * ball.speed;
-        ball.y = this.paddle.y - ball.radius - 1;
-        this.combo = 1; // Reset combo on paddle touch
-        this.sound.paddleHit();
-        this.updateHUD();
-      }
-
-      // Brick collision check (Circle vs AABB)
-      for (const brick of this.bricks) {
-        if (!brick.alive) continue;
-
-        const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
-        const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
-        const dx = ball.x - closestX;
-        const dy = ball.y - closestY;
-
-        if (dx * dx + dy * dy <= ball.radius * ball.radius) {
-          // Reflect ball unless fireball piercing a breakable brick
-          if (!ball.fireball || brick.indestructible) {
-            const overlapLeft = ball.x + ball.radius - brick.x;
-            const overlapRight = brick.x + brick.width - (ball.x - ball.radius);
-            const overlapTop = ball.y + ball.radius - brick.y;
-            const overlapBottom = brick.y + brick.height - (ball.y - ball.radius);
-            const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
-
-            if (minOverlap === overlapLeft || minOverlap === overlapRight) {
-              ball.vx = -ball.vx;
-            } else {
-              ball.vy = -ball.vy;
-            }
-          }
-
-          if (brick.indestructible) {
-            this.sound.wallHit();
-            this.effects.spawnExplosion(closestX, closestY, '#cbd5e1', 6, 0.6);
-          } else {
-            const destroyed = brick.hit(ball.fireball);
-            if (destroyed) {
-              this.sound.brickBreak(this.combo);
-              this.effects.triggerShake(5, 3.5);
-              this.onBrickDestroyed(brick);
-              this.combo = Math.min(8, this.combo + 1);
-            } else {
-              this.sound.brickDamage(this.combo);
-              this.score += 15 * this.combo;
-              this.effects.spawnExplosion(closestX, closestY, brick.getColor(), 7, 0.7);
-            }
-            this.updateHUD();
-          }
-          break;
-        }
-      }
-    });
-
-    // Filter out fallen balls
-    this.balls = this.balls.filter((b) => b.y - b.radius <= this.height);
-    if (this.balls.length === 0) {
-      this.lives--;
-      this.sound.loseLife();
-      this.effects.triggerShake(12, 7);
-      this.updateHUD();
-
-      if (this.lives <= 0) {
-        this.state = 'GAME_OVER';
-        this.showOverlay(
-          'OUT OF LIVES',
-          'GAME OVER',
-          `Final Score: ${this.score.toLocaleString()} — Ready for another run?`,
-          'PLAY AGAIN (SPACE)'
-        );
-      } else {
-        this.resetTurn();
-      }
-      return;
-    }
-
-    // Update Power-Ups
-    this.powerUps.forEach((p) => {
-      p.update(this.height);
-      if (
-        p.alive &&
-        p.x + p.width / 2 >= this.paddle.x &&
-        p.x - p.width / 2 <= this.paddle.x + this.paddle.width &&
-        p.y + p.height / 2 >= this.paddle.y &&
-        p.y - p.height / 2 <= this.paddle.y + this.paddle.height
-      ) {
-        p.alive = false;
-        this.effects.spawnText(this.paddle.x + this.paddle.width / 2, this.paddle.y - 12, p.info.label, p.info.color);
-        this.applyPowerUp(p.info.id);
-      }
-    });
-    this.powerUps = this.powerUps.filter((p) => p.alive);
-
-    // Update Lasers
-    this.lasers.forEach((laser) => {
-      laser.update();
-      for (const brick of this.bricks) {
-        if (!brick.alive) continue;
-        if (
-          laser.x >= brick.x &&
-          laser.x <= brick.x + brick.width &&
-          laser.y >= brick.y &&
-          laser.y <= brick.y + brick.height
-        ) {
-          laser.alive = false;
-          if (!brick.indestructible) {
-            const destroyed = brick.hit(false);
-            if (destroyed) {
-              this.sound.brickBreak(this.combo);
-              this.onBrickDestroyed(brick);
-            } else {
-              this.sound.brickDamage(this.combo);
-            }
-            this.updateHUD();
-          }
-          break;
-        }
-      }
-    });
-    this.lasers = this.lasers.filter((l) => l.alive);
-
-    // Check if all breakable bricks are cleared
-    const remainingBreakable = this.bricks.some((b) => b.alive && !b.indestructible);
-    if (!remainingBreakable) {
-      this.sound.levelWin();
-      if (this.isCustomLevel || this.currentLevelIndex >= LEVELS.length - 1) {
-        this.state = 'VICTORY';
-        this.showOverlay(
-          'ALL STAGES CLEARED',
-          'VICTORY!',
-          `Incredible! You finished with ${this.score.toLocaleString()} points!`,
-          'PLAY AGAIN (SPACE)'
-        );
-      } else {
-        this.state = 'LEVEL_CLEAR';
-        const nextStage = LEVELS[this.currentLevelIndex + 1];
-        this.showOverlay(
-          `STAGE ${this.currentLevelIndex + 1} COMPLETE`,
-          nextStage.name.toUpperCase(),
-          nextStage.subtitle,
-          'NEXT STAGE (SPACE)'
-        );
-      }
-    }
-  }
-
-  updatePowerUpHUD() {
-    const bar = document.getElementById('powerup-bar');
-    bar.innerHTML = '';
-    const items = [
-      { key: 'wide', label: '↔️ Wide', color: '#22c55e' },
-      { key: 'laser', label: '🔫 Laser (Click/Space)', color: '#f43f5e' },
-      { key: 'fire', label: '🔥 Fireball', color: '#fb923c' },
-    ];
-    items.forEach((item) => {
-      const frames = this.timers[item.key];
-      if (frames > 0) {
-        const secs = Math.ceil(frames / 60);
-        const tag = document.createElement('div');
-        tag.className = 'active-powerup-tag';
-        tag.style.borderColor = item.color;
-        tag.textContent = `${item.label}: ${secs}s`;
-        bar.appendChild(tag);
-      }
-    });
-  }
-
-  updateHUD() {
-    document.getElementById('score-display').textContent = this.score.toLocaleString();
-    document.getElementById('highscore-display').textContent = this.highScore.toLocaleString();
-    document.getElementById('combo-display').textContent = `${this.combo}x`;
-    document.getElementById('level-display').textContent = this.isCustomLevel
-      ? 'CUSTOM'
-      : `${this.currentLevelIndex + 1} / ${LEVELS.length}`;
-    document.getElementById('lives-display').textContent = '♥'.repeat(Math.max(0, this.lives));
-  }
-
-  drawBackgroundGrid() {
-    this.ctx.save();
-    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.045)';
-    this.ctx.lineWidth = 1;
-    const step = 45;
-    for (let x = 0; x < this.width; x += step) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, this.height);
-      this.ctx.stroke();
-    }
-    for (let y = 0; y < this.height; y += step) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(this.width, y);
-      this.ctx.stroke();
-    }
-    this.ctx.restore();
-  }
-
-  draw() {
-    this.ctx.clearRect(0, 0, this.width, this.height);
-
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.save();
     this.effects.applyScreenShake(this.ctx);
-
-    this.drawBackgroundGrid();
-
-    this.bricks.forEach((b) => b.draw(this.ctx));
-    this.powerUps.forEach((p) => p.draw(this.ctx));
-    this.lasers.forEach((l) => l.draw(this.ctx));
-    this.paddle.draw(this.ctx);
-    this.balls.forEach((b) => b.draw(this.ctx));
+    this.currentGame.draw();
     this.effects.draw(this.ctx);
-
     this.ctx.restore();
-  }
 
-  loop() {
-    this.update();
-    this.draw();
-    requestAnimationFrame(() => this.loop());
+    requestAnimationFrame((t) => this.loop(t));
   }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  new NeonBreakoutGame();
+  new ArcadePlaygroundHub();
 });

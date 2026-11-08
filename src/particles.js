@@ -1,19 +1,19 @@
 /**
  * Particle & Visual Effects System
- * Handles brick shatter sparks, floating score popups, and screen-shake physics.
+ * Clean, crisp arcade particles, floating score popups, and subtle screen shake.
  */
 class Particle {
   constructor(x, y, color, speedScale = 1) {
     this.x = x;
     this.y = y;
     const angle = Math.random() * Math.PI * 2;
-    const speed = (1.2 + Math.random() * 4.5) * speedScale;
+    const speed = (1.1 + Math.random() * 4.0) * speedScale;
     this.vx = Math.cos(angle) * speed;
     this.vy = Math.sin(angle) * speed;
-    this.gravity = 0.12;
+    this.gravity = 0.1;
     this.alpha = 1;
-    this.decay = 0.018 + Math.random() * 0.022;
-    this.size = 2.5 + Math.random() * 3.5;
+    this.decay = 0.022 + Math.random() * 0.02;
+    this.size = 3 + Math.random() * 3;
     this.color = color;
   }
 
@@ -29,9 +29,9 @@ class Particle {
     ctx.save();
     ctx.globalAlpha = Math.max(0, this.alpha);
     ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 8;
-    ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+    ctx.beginPath();
+    ctx.roundRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size, 2);
+    ctx.fill();
     ctx.restore();
   }
 }
@@ -43,22 +43,20 @@ class FloatingText {
     this.text = text;
     this.color = color;
     this.alpha = 1;
-    this.vy = -1.1;
+    this.vy = -1.0;
   }
 
   update() {
     this.y += this.vy;
-    this.alpha -= 0.022;
+    this.alpha -= 0.024;
   }
 
   draw(ctx) {
     if (this.alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = Math.max(0, this.alpha);
-    ctx.font = 'bold 14px "Segoe UI", sans-serif';
+    ctx.font = 'bold 13px "Segoe UI", sans-serif';
     ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 6;
     ctx.textAlign = 'center';
     ctx.fillText(this.text, this.x, this.y);
     ctx.restore();
@@ -73,7 +71,7 @@ class EffectsManager {
     this.shakeMagnitude = 0;
   }
 
-  spawnExplosion(x, y, color, count = 18, speedScale = 1) {
+  spawnExplosion(x, y, color, count = 14, speedScale = 1) {
     for (let i = 0; i < count; i++) {
       this.particles.push(new Particle(x, y, color, speedScale));
     }
@@ -83,7 +81,7 @@ class EffectsManager {
     this.floatingTexts.push(new FloatingText(x, y, text, color));
   }
 
-  triggerShake(frames = 8, magnitude = 5) {
+  triggerShake(frames = 6, magnitude = 4) {
     this.shakeTime = Math.max(this.shakeTime, frames);
     this.shakeMagnitude = Math.max(this.shakeMagnitude, magnitude);
   }

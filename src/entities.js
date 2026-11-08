@@ -1,5 +1,5 @@
 /**
- * Core Game Entities (Object-Oriented Design)
+ * Block Breaker Entities (Object-Oriented Design)
  * Classes: Paddle, Ball, Brick, PowerUp, Laser
  */
 
@@ -7,13 +7,13 @@ class Paddle {
   constructor(canvasWidth, canvasHeight) {
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
-    this.baseWidth = 124;
+    this.baseWidth = 128;
     this.width = this.baseWidth;
     this.height = 15;
     this.x = (canvasWidth - this.width) / 2;
     this.y = canvasHeight - 38;
     this.speed = 9.5;
-    this.vx = 0;
+    this.color = '#38bdf8';
     this.laserActive = false;
   }
 
@@ -40,33 +40,24 @@ class Paddle {
 
   draw(ctx) {
     ctx.save();
-    const grad = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y);
-    grad.addColorStop(0, '#38bdf8');
-    grad.addColorStop(0.5, '#818cf8');
-    grad.addColorStop(1, '#38bdf8');
-
-    ctx.fillStyle = grad;
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 16;
+    ctx.fillStyle = this.color;
 
     // Rounded capsule paddle
     ctx.beginPath();
     ctx.roundRect(this.x, this.y, this.width, this.height, 8);
     ctx.fill();
 
-    // Inner core highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    // Crisp inner highlight bar
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
     ctx.beginPath();
     ctx.roundRect(this.x + 14, this.y + 3, this.width - 28, 4, 2);
     ctx.fill();
 
     // Laser turrets if active
     if (this.laserActive) {
-      ctx.fillStyle = '#f43f5e';
-      ctx.shadowColor = '#f43f5e';
-      ctx.shadowBlur = 10;
-      ctx.fillRect(this.x + 4, this.y - 6, 6, 8);
-      ctx.fillRect(this.x + this.width - 10, this.y - 6, 6, 8);
+      ctx.fillStyle = '#fb7185';
+      ctx.fillRect(this.x + 5, this.y - 6, 6, 7);
+      ctx.fillRect(this.x + this.width - 11, this.y - 6, 6, 7);
     }
 
     ctx.restore();
@@ -74,18 +65,26 @@ class Paddle {
 }
 
 class Ball {
-  constructor(x, y, speed = 6.6) {
+  constructor(x, y, speed = 6.5, color = '#ffffff') {
     this.x = x;
     this.y = y;
     this.radius = 8;
     this.baseSpeed = speed;
     this.speed = speed;
+    this.color = color;
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
     this.attached = true;
     this.fireball = false;
     this.trail = [];
+  }
+
+  setSpeed(newSpeed) {
+    const currentMag = Math.hypot(this.vx, this.vy) || 1;
+    this.speed = newSpeed;
+    this.vx = (this.vx / currentMag) * newSpeed;
+    this.vy = (this.vy / currentMag) * newSpeed;
   }
 
   launch() {
@@ -101,19 +100,17 @@ class Ball {
       this.x = paddle.x + paddle.width / 2;
       this.y = paddle.y - this.radius - 2;
       this.trail = [];
-      return;
+      return null;
     }
 
-    // Store trail coordinates
     this.trail.push({ x: this.x, y: this.y });
-    if (this.trail.length > 9) {
+    if (this.trail.length > 7) {
       this.trail.shift();
     }
 
     this.x += this.vx;
     this.y += this.vy;
 
-    // Left / Right wall bounce
     if (this.x - this.radius < 0) {
       this.x = this.radius;
       this.vx = Math.abs(this.vx);
@@ -124,8 +121,6 @@ class Ball {
       this.vx = -Math.abs(this.vx);
       return 'wall';
     }
-
-    // Top ceiling bounce
     if (this.y - this.radius < 0) {
       this.y = this.radius;
       this.vy = Math.abs(this.vy);
@@ -138,24 +133,20 @@ class Ball {
   draw(ctx) {
     ctx.save();
 
-    // Draw motion trail
     for (let i = 0; i < this.trail.length; i++) {
       const point = this.trail[i];
       const ratio = (i + 1) / this.trail.length;
       ctx.beginPath();
-      ctx.arc(point.x, point.y, this.radius * ratio * 0.85, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, this.radius * ratio * 0.8, 0, Math.PI * 2);
       ctx.fillStyle = this.fireball
-        ? `rgba(251, 146, 60, ${ratio * 0.38})`
-        : `rgba(56, 189, 248, ${ratio * 0.32})`;
+        ? `rgba(251, 146, 60, ${ratio * 0.35})`
+        : `rgba(148, 163, 184, ${ratio * 0.25})`;
       ctx.fill();
     }
 
-    // Draw main ball
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.fireball ? '#fb923c' : '#ffffff';
-    ctx.shadowColor = this.fireball ? '#ef4444' : '#38bdf8';
-    ctx.shadowBlur = this.fireball ? 20 : 14;
+    ctx.fillStyle = this.fireball ? '#fb923c' : this.color;
     ctx.fill();
     ctx.restore();
   }
@@ -179,11 +170,10 @@ class Brick {
 
   getColor() {
     if (this.indestructible) return '#64748b';
-    if (this.explosive) return '#ef4444';
-    if (this.hp === 3) return '#a855f7';
+    if (this.explosive) return '#fb7185';
+    if (this.hp === 3) return '#a78bfa';
     if (this.hp === 2) return '#fb923c';
-    // Row-based neon palette for 1 HP bricks
-    const rowColors = ['#38bdf8', '#22d3ee', '#34d399', '#a3e635', '#facc15'];
+    const rowColors = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#60a5fa'];
     return rowColors[this.row % rowColors.length];
   }
 
@@ -196,9 +186,9 @@ class Brick {
     }
     if (this.hp <= 0) {
       this.alive = false;
-      return true; // Destroyed
+      return true;
     }
-    return false; // Damaged but still standing
+    return false;
   }
 
   draw(ctx) {
@@ -207,21 +197,16 @@ class Brick {
 
     ctx.save();
     ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = this.explosive ? 14 : 8;
-
     ctx.beginPath();
     ctx.roundRect(this.x, this.y, this.width, this.height, 5);
     ctx.fill();
 
-    // Top bevel highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    // Subtle top bevel
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
     ctx.beginPath();
     ctx.roundRect(this.x + 3, this.y + 2, this.width - 6, 4, 2);
     ctx.fill();
 
-    // Symbol overlay for special bricks
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
     ctx.font = 'bold 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -244,18 +229,18 @@ class Brick {
 
 const POWERUP_TYPES = [
   { id: 'MULTI', label: '⚡ MULTI-BALL', color: '#38bdf8' },
-  { id: 'WIDE', label: '↔️ WIDE PADDLE', color: '#22c55e' },
-  { id: 'LASER', label: '🔫 LASER CANNON', color: '#f43f5e' },
+  { id: 'WIDE', label: '↔️ WIDE PADDLE', color: '#34d399' },
+  { id: 'LASER', label: '🔫 LASER CANNON', color: '#fb7185' },
   { id: 'FIRE', label: '🔥 FIREBALL', color: '#fb923c' },
-  { id: 'LIFE', label: '❤️ +1 LIFE', color: '#ec4899' },
+  { id: 'LIFE', label: '❤️ +1 LIFE', color: '#f472b6' },
 ];
 
 class PowerUp {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = 34;
-    this.height = 16;
+    this.width = 36;
+    this.height = 17;
     this.vy = 2.4;
     this.alive = true;
     const randomIndex = Math.floor(Math.random() * POWERUP_TYPES.length);
@@ -273,13 +258,11 @@ class PowerUp {
     if (!this.alive) return;
     ctx.save();
     ctx.fillStyle = this.info.color;
-    ctx.shadowColor = this.info.color;
-    ctx.shadowBlur = 12;
     ctx.beginPath();
     ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height, 8);
     ctx.fill();
 
-    ctx.fillStyle = '#070913';
+    ctx.fillStyle = '#0f1221';
     ctx.font = 'bold 10px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -308,9 +291,7 @@ class Laser {
   draw(ctx) {
     if (!this.alive) return;
     ctx.save();
-    ctx.fillStyle = '#f43f5e';
-    ctx.shadowColor = '#f43f5e';
-    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#fb7185';
     ctx.fillRect(this.x - this.width / 2, this.y, this.width, this.height);
     ctx.restore();
   }
