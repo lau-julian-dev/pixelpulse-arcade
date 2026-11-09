@@ -14,7 +14,7 @@ class SpaceDefenderGame {
     this.onStateChange = onStateChange;
 
     this.config = {
-      shipColor: '#a78bfa',  // Lavender default
+      shipColor: '#B48BC4',  // Lavender default
       fireRate: 'normal',    // 'normal' | 'rapid' | 'twin'
       alienSpeed: 1,
     };
@@ -74,7 +74,7 @@ class SpaceDefenderGame {
     const startY = 64;
     const gapX = 72;
     const gapY = 46;
-    const rowColors = ['#fb7185', '#fbbf24', '#38bdf8', '#34d399'];
+    const rowColors = ['#FF7E5F', '#FFFDF9', '#FEB47B', '#F5AB99'];
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -262,7 +262,7 @@ class SpaceDefenderGame {
         ) {
           bunker.hp--;
           ab.dead = true;
-          this.effects.spawnExplosion(ab.x, ab.y, '#34d399', 6, 0.6);
+          this.effects.spawnExplosion(ab.x, ab.y, '#F5AB99', 6, 0.6);
           break;
         }
       }
@@ -279,7 +279,7 @@ class SpaceDefenderGame {
         this.lives--;
         this.sound.loseLife();
         this.effects.triggerShake(10, 5);
-        this.effects.spawnExplosion(this.ship.x, this.ship.y, '#fb7185', 20, 1.1);
+        this.effects.spawnExplosion(this.ship.x, this.ship.y, '#FF7E5F', 20, 1.1);
         this.notifyHud();
         if (this.lives <= 0) {
           this.triggerGameOver('Your starfighter shields were depleted!');
@@ -300,7 +300,7 @@ class SpaceDefenderGame {
 
   draw() {
     const ctx = this.ctx;
-    ctx.fillStyle = '#0d1122';
+    ctx.fillStyle = '#351C4D';
     ctx.fillRect(0, 0, this.width, this.height);
 
     // Draw starfield
@@ -313,7 +313,7 @@ class SpaceDefenderGame {
     this.bunkers.forEach((b) => {
       if (b.hp <= 0) return;
       ctx.save();
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = '#F5AB99';
       ctx.globalAlpha = 0.3 + (b.hp / b.maxHp) * 0.7;
       ctx.beginPath();
       ctx.roundRect(b.x, b.y, b.width, b.height, 5);
@@ -331,7 +331,7 @@ class SpaceDefenderGame {
       ctx.fill();
 
       // Alien visor eyes
-      ctx.fillStyle = '#0d1122';
+      ctx.fillStyle = '#351C4D';
       ctx.fillRect(a.x + 8, a.y + 8, 6, 6);
       ctx.fillRect(a.x + a.width - 14, a.y + 8, 6, 6);
       ctx.restore();
@@ -355,13 +355,13 @@ class SpaceDefenderGame {
     ctx.restore();
 
     // Draw Player Bullets
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = '#FEB47B';
     this.bullets.forEach((b) => {
       ctx.fillRect(b.x - 2, b.y, 4, 12);
     });
 
     // Draw Alien Bullets
-    ctx.fillStyle = '#fb7185';
+    ctx.fillStyle = '#FF7E5F';
     this.alienBullets.forEach((ab) => {
       ctx.fillRect(ab.x - 2, ab.y, 4, 10);
     });

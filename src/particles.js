@@ -37,7 +37,7 @@ class Particle {
 }
 
 class FloatingText {
-  constructor(x, y, text, color = '#38bdf8') {
+  constructor(x, y, text, color = '#FEB47B') {
     this.x = x;
     this.y = y;
     this.text = text;
@@ -55,7 +55,7 @@ class FloatingText {
     if (this.alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = Math.max(0, this.alpha);
-    ctx.font = 'bold 13px "Segoe UI", sans-serif';
+    ctx.font = 'bold 13px "Space Grotesk", "Segoe UI", sans-serif';
     ctx.fillStyle = this.color;
     ctx.textAlign = 'center';
     ctx.fillText(this.text, this.x, this.y);
