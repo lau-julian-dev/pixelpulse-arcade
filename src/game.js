@@ -33,6 +33,9 @@ class BreakoutGame {
     this.combo = 1;
     this.currentLevelIndex = 0;
     this.isCustomLevel = false;
+    this.customGrid = null; // nivel personalizado activo (editor o reto diario)
+    this.daily = null; // reto diario activo: { date, name, grid, config }
+    this.configBeforeDaily = null;
 
     this.keys = { left: false, right: false };
     this.timers = { wide: 0, laser: 0, fire: 0 };
@@ -41,7 +44,11 @@ class BreakoutGame {
     this.loadStage(0);
   }
 
-  applyConfig(newConfig) {
+  applyConfig(newConfig, force = false) {
+    // En el reto diario la velocidad, la paleta y los power-ups son iguales para todos.
+    if (this.daily && !force) {
+      newConfig = newConfig.paddleColor ? { paddleColor: newConfig.paddleColor } : {};
+    }
     Object.assign(this.config, newConfig);
     this.paddle.color = this.config.paddleColor;
     this.paddle.baseWidth = Number(this.config.paddleBaseWidth);
@@ -56,7 +63,7 @@ class BreakoutGame {
     this.score = 0;
     this.lives = 3;
     if (this.isCustomLevel) {
-      this.buildBricksFromGrid(loadCustomGrid());
+      this.buildBricksFromGrid(this.customGrid || loadCustomGrid());
       this.resetTurn();
     } else {
       this.loadStage(this.currentLevelIndex);
@@ -64,6 +71,7 @@ class BreakoutGame {
   }
 
   loadStage(index) {
+    this.exitDaily();
     this.currentLevelIndex = index;
     this.isCustomLevel = false;
     document.querySelectorAll('.stage-btn').forEach((b, i) => {
@@ -75,12 +83,36 @@ class BreakoutGame {
   }
 
   loadCustomStage(grid) {
+    this.exitDaily();
+    this.customGrid = grid;
     this.isCustomLevel = true;
     this.score = 0;
     this.lives = 3;
     document.querySelectorAll('.stage-btn').forEach((b) => b.classList.remove('active'));
     this.buildBricksFromGrid(grid);
     this.resetTurn();
+  }
+
+  /** Carga el reto diario con sus ajustes fijos. */
+  loadDailyStage(daily) {
+    if (!this.daily) this.configBeforeDaily = { ...this.config };
+    this.daily = daily;
+    this.applyConfig(daily.config, true);
+    this.customGrid = daily.grid;
+    this.isCustomLevel = true;
+    this.score = 0;
+    this.lives = 3;
+    document.querySelectorAll('.stage-btn').forEach((b) => b.classList.remove('active'));
+    this.buildBricksFromGrid(daily.grid);
+    this.resetTurn();
+  }
+
+  /** Sale del reto diario y devuelve los ajustes que tenía el jugador. */
+  exitDaily() {
+    if (!this.daily) return;
+    this.daily = null;
+    if (this.configBeforeDaily) this.applyConfig(this.configBeforeDaily, true);
+    this.configBeforeDaily = null;
   }
 
   buildBricksFromGrid(grid) {
@@ -257,7 +289,7 @@ class BreakoutGame {
       stat2Label: 'LIVES',
       stat2Value: '♥'.repeat(Math.max(0, this.lives)),
       stat3Label: 'STAGE',
-      stat3Value: this.isCustomLevel ? 'CUSTOM' : `${this.currentLevelIndex + 1} / ${LEVELS.length}`,
+      stat3Value: this.daily ? 'DAILY' : this.isCustomLevel ? 'CUSTOM' : `${this.currentLevelIndex + 1} / ${LEVELS.length}`,
     });
   }
 
@@ -457,7 +489,7 @@ class BreakoutGame {
       this.sound.levelWin();
       if (this.isCustomLevel || this.currentLevelIndex >= LEVELS.length - 1) {
         this.onStateChange('VICTORY', {
-          subtitle: 'BLOCK BREAKER // ALL STAGES CLEARED',
+          subtitle: this.daily ? `DAILY CHALLENGE // ${this.daily.name.toUpperCase()} CLEARED` : 'BLOCK BREAKER // ALL STAGES CLEARED',
           title: 'VICTORY!',
           desc: `Awesome run! You finished with ${this.score.toLocaleString()} points!`,
           buttonText: 'PLAY AGAIN (SPACE)',
@@ -555,6 +587,7 @@ class ArcadePlaygroundHub {
     this.bindGlobalEvents();
     this.bindCustomizerControls();
     this.initLevelEditor();
+    this.initDailyChallenge();
     this.switchGame('breakout');
 
     requestAnimationFrame((t) => this.loop(t));
@@ -588,7 +621,7 @@ class ArcadePlaygroundHub {
     this.state = 'MENU';
     this.showOverlay(meta.badge, meta.title, meta.desc, '▶️ PLAY NOW (SPACE)');
     window.PPLeaderboard?.hideOffer();
-    window.PPLeaderboard?.show(gameKey);
+    window.PPLeaderboard?.show(gameKey, this.rankingDaily());
   }
 
   renderHUD(data) {
@@ -608,10 +641,15 @@ class ArcadePlaygroundHub {
       this.showOverlay(modalInfo.subtitle, modalInfo.title, modalInfo.desc, modalInfo.buttonText);
     }
     if (newState === 'GAME_OVER' || newState === 'VICTORY') {
-      window.PPLeaderboard?.offer(this.activeGameKey, this.rankingScore());
+      window.PPLeaderboard?.offer(this.activeGameKey, this.rankingScore(), this.rankingDaily());
     } else {
       window.PPLeaderboard?.hideOffer();
     }
+  }
+
+  /** Reto diario activo en el juego actual, o null. */
+  rankingDaily() {
+    return this.activeGameKey === 'breakout' ? this.cartridges.breakout.daily : null;
   }
 
   /** Puntaje que cuenta para el ranking global. En Pong: rally más largo contra la IA. */
@@ -773,6 +811,7 @@ class ArcadePlaygroundHub {
     document.querySelectorAll('.stage-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         this.cartridges.breakout.loadStage(Number(btn.dataset.level));
+        window.PPLeaderboard?.show('breakout', null);
         this.startOrResume();
       });
     });
@@ -906,7 +945,43 @@ class ArcadePlaygroundHub {
       saveCustomGrid(customGrid);
       closeEditor();
       this.cartridges.breakout.loadCustomStage(customGrid);
+      window.PPLeaderboard?.show('breakout', null);
       this.startOrResume();
+    });
+  }
+
+  /**
+   * Reto diario: nivel de Block Breaker generado por fecha en /api/daily.
+   * Sin API (GitHub Pages) el botón queda oculto.
+   */
+  async initDailyChallenge() {
+    const btn = document.getElementById('btn-daily');
+    if (!btn) return;
+    let daily;
+    try {
+      const res = await fetch('api/daily', { headers: { Accept: 'application/json' } });
+      const type = res.headers.get('content-type') || '';
+      if (!res.ok || !type.includes('application/json')) return;
+      daily = await res.json();
+    } catch (_) {
+      return;
+    }
+
+    btn.querySelector('[data-daily-name]').textContent = daily.name;
+    btn.hidden = false;
+    btn.addEventListener('click', () => {
+      if (this.activeGameKey !== 'breakout') this.switchGame('breakout');
+      this.effects.clear();
+      this.cartridges.breakout.loadDailyStage(daily);
+      this.state = 'MENU';
+      this.showOverlay(
+        `DAILY CHALLENGE // ${daily.date}`,
+        daily.name.toUpperCase(),
+        'Same level and settings for everyone today. Speed, paddle size and power-ups are locked. Clear it with the highest score!',
+        '▶️ START CHALLENGE (SPACE)'
+      );
+      window.PPLeaderboard?.hideOffer();
+      window.PPLeaderboard?.show('breakout', daily);
     });
   }
 

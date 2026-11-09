@@ -1,33 +1,30 @@
 import { createHash } from 'node:crypto';
 import { AuthError, getPlayer } from './_lib/auth.mjs';
+import { DATE_RE, todayUTC } from './_lib/daily.mjs';
 import { GAMES, getSql, isGame, json } from './_lib/db.mjs';
+import { rankFor, topScores } from './_lib/ranking.mjs';
 
 const NAME_RE = /^[\p{L}\p{N} _.-]{1,16}$/u;
 const MAX_PER_MINUTE = 6;
+const DAILY_GAME = 'breakout';
 
 /**
- * GET /api/scores?game=breakout&limit=10 → mejor puntaje de cada jugador.
- * Los jugadores con cuenta se agrupan por cuenta y los invitados por nombre.
+ * GET /api/scores?game=breakout&limit=10 → ranking histórico del juego.
+ * GET /api/scores?game=breakout&daily=AAAA-MM-DD → ranking del reto diario.
  */
 export async function GET(request) {
   const url = new URL(request.url);
   const game = url.searchParams.get('game');
   if (!isGame(game)) return json({ error: 'Unknown game.' }, 400);
 
+  const daily = url.searchParams.get('daily');
+  if (daily !== null && !DATE_RE.test(daily)) return json({ error: 'Invalid daily date.' }, 400);
+
   const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get('limit') ?? '10', 10) || 10));
 
   try {
-    const sql = getSql();
-    const scores = await sql`
-      SELECT (array_agg(name ORDER BY created_at DESC))[1] AS name,
-             MAX(score)::int AS score,
-             bool_or(user_id IS NOT NULL) AS verified
-      FROM scores
-      WHERE game = ${game}
-      GROUP BY COALESCE(user_id, 'guest:' || lower(name))
-      ORDER BY score DESC, MIN(created_at) ASC
-      LIMIT ${limit}`;
-    return json({ game, scores }, 200, {
+    const scores = await topScores(getSql(), game, daily, limit);
+    return json({ game, daily, scores }, 200, {
       'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30',
     });
   } catch (err) {
@@ -37,8 +34,9 @@ export async function GET(request) {
 }
 
 /**
- * POST /api/scores { game, name, score } → guarda el puntaje y devuelve el puesto.
+ * POST /api/scores { game, name, score, daily? } → guarda el puntaje y devuelve el puesto.
  * Con sesión de Clerk se usa el nombre de la cuenta; sin sesión, el nombre enviado.
+ * `daily` solo se acepta para el reto del día vigente.
  */
 export async function POST(request) {
   let body;
@@ -53,6 +51,16 @@ export async function POST(request) {
   if (!isGame(game)) return json({ error: 'Unknown game.' }, 400);
   if (!Number.isInteger(score) || score < 1 || score > GAMES[game]) {
     return json({ error: 'Invalid score.' }, 400);
+  }
+
+  const daily = body?.daily ?? null;
+  if (daily !== null) {
+    if (game !== DAILY_GAME || typeof daily !== 'string' || !DATE_RE.test(daily)) {
+      return json({ error: 'Invalid daily challenge.' }, 400);
+    }
+    if (daily !== todayUTC()) {
+      return json({ error: 'This daily challenge has ended. Try today’s challenge!' }, 409);
+    }
   }
 
   let player;
@@ -90,20 +98,11 @@ export async function POST(request) {
     }
 
     await sql`
-      INSERT INTO scores (game, name, score, ip_hash, user_id)
-      VALUES (${game}, ${name}, ${score}, ${ipHash}, ${userId})`;
+      INSERT INTO scores (game, name, score, ip_hash, user_id, daily)
+      VALUES (${game}, ${name}, ${score}, ${ipHash}, ${userId}, ${daily}::date)`;
 
-    const [{ rank }] = await sql`
-      SELECT COUNT(*)::int + 1 AS rank
-      FROM (
-        SELECT MAX(score) AS best
-        FROM scores
-        WHERE game = ${game}
-        GROUP BY COALESCE(user_id, 'guest:' || lower(name))
-      ) AS t
-      WHERE t.best > ${score}`;
-
-    return json({ ok: true, rank, name, verified: Boolean(userId) }, 201);
+    const rank = await rankFor(sql, game, daily, score);
+    return json({ ok: true, rank, name, verified: Boolean(userId), daily }, 201);
   } catch (err) {
     console.error('POST /api/scores', err);
     return json({ error: 'Could not save the score.' }, 500);
