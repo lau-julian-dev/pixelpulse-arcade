@@ -43,6 +43,11 @@
 
       <div class="quick-actions">
         <a href="index.html" class="btn btn-secondary" title="Volver a la portada">← Inicio</a>
+        <!-- Inicio de sesión opcional (Clerk). Oculto si no hay configuración. -->
+        <div id="auth-box" class="auth-box" hidden>
+          <button id="btn-signin" class="btn btn-primary" type="button">Sign in</button>
+          <div id="auth-user" class="auth-user" hidden></div>
+        </div>
         <button id="btn-sound" class="btn btn-icon" title="Toggle Arcade Audio">🔊</button>
         <button id="btn-pause" class="btn btn-icon" title="Pause / Resume (P)">⏸️</button>
         <button id="btn-restart" class="btn btn-secondary" title="Restart Current Game">↻ Restart</button>
@@ -99,7 +104,13 @@
                 <div class="rank-row">
                   <label class="sr-only" for="rank-name">Your name</label>
                   <input id="rank-name" name="name" type="text" maxlength="16" placeholder="Your name" spellcheck="false" />
+                  <p id="rank-as" class="rank-as" hidden>As <b id="rank-as-name"></b> <span class="lb-badge" title="Signed-in player">✓</span></p>
                   <button id="rank-submit" class="btn btn-secondary" type="submit">Submit</button>
+                </div>
+                <div class="rank-links">
+                  <button id="rank-signin" class="link-btn" type="button" hidden>Sign in to get a verified ✓ badge</button>
+                  <button id="rank-guest" class="link-btn" type="button" hidden>Submit as guest instead</button>
+                  <button id="rank-account" class="link-btn" type="button" hidden>Use my account</button>
                 </div>
                 <p id="rank-msg" class="rank-msg" role="status" aria-live="polite"></p>
               </form>
@@ -357,6 +368,7 @@
   <script src="src/snake.js"></script>
   <script src="src/pong.js"></script>
   <script src="src/invaders.js"></script>
+  <script src="src/auth.js"></script>
   <script src="src/leaderboard.js"></script>
   <script src="src/game.js"></script>
 </body>

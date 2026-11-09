@@ -26,12 +26,37 @@
   const scoreOut = document.getElementById('rank-score');
   const msg = document.getElementById('rank-msg');
   const submitBtn = document.getElementById('rank-submit');
+  const asBox = document.getElementById('rank-as');
+  const asName = document.getElementById('rank-as-name');
+  const signInLink = document.getElementById('rank-signin');
+  const guestLink = document.getElementById('rank-guest');
+  const accountLink = document.getElementById('rank-account');
 
   let available = true;
   let loadedOnce = false;
   let currentGame = 'breakout';
   let pending = null;
   let requestId = 0;
+  let preferGuest = false;
+
+  const auth = () => window.PPAuth;
+
+  /** Con sesión iniciada y sin elegir invitado, el puntaje va a la cuenta. */
+  function usingAccount() {
+    return Boolean(auth()?.user) && !preferGuest;
+  }
+
+  /** Muestra el campo de nombre (invitado) o el nombre de la cuenta. */
+  function syncMode() {
+    const signedIn = Boolean(auth()?.user);
+    const account = usingAccount();
+    nameInput.hidden = account;
+    asBox.hidden = !account;
+    if (account) asName.textContent = auth().name;
+    signInLink.hidden = signedIn || !auth()?.enabled;
+    guestLink.hidden = !account;
+    accountLink.hidden = !(signedIn && preferGuest);
+  }
 
   try {
     nameInput.value = localStorage.getItem(NAME_KEY) || '';
@@ -70,6 +95,13 @@
         const name = document.createElement('span');
         name.className = 'lb-name';
         name.textContent = row.name;
+        if (row.verified) {
+          const badge = document.createElement('span');
+          badge.className = 'lb-badge';
+          badge.title = 'Signed-in player';
+          badge.textContent = '✓';
+          name.append(' ', badge);
+        }
 
         const score = document.createElement('span');
         score.className = 'lb-score';
@@ -123,6 +155,7 @@
     submitBtn.disabled = false;
     nameInput.disabled = false;
     setMessage('');
+    syncMode();
     form.hidden = false;
   }
 
@@ -135,8 +168,9 @@
     e.preventDefault();
     if (!pending) return;
 
-    const name = nameInput.value.trim().replace(/\s+/g, ' ');
-    if (!/^[\p{L}\p{N} _.-]{1,16}$/u.test(name)) {
+    const account = usingAccount();
+    const name = account ? auth().name : nameInput.value.trim().replace(/\s+/g, ' ');
+    if (!account && !/^[\p{L}\p{N} _.-]{1,16}$/u.test(name)) {
       setMessage('Use 1 to 16 letters, numbers, spaces, dots, dashes or underscores.', 'error');
       nameInput.focus();
       return;
@@ -146,9 +180,14 @@
     setMessage('Sending…');
 
     try {
+      const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      if (account) {
+        const token = await auth().getToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+      }
       const res = await fetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers,
         body: JSON.stringify({ game: pending.game, name, score: pending.score }),
       });
       const data = await res.json().catch(() => ({}));
@@ -157,20 +196,39 @@
         submitBtn.disabled = false;
         return;
       }
-      try {
-        localStorage.setItem(NAME_KEY, name);
-      } catch (_) {
-        /* almacenamiento no disponible */
+      if (!account) {
+        try {
+          localStorage.setItem(NAME_KEY, name);
+        } catch (_) {
+          /* almacenamiento no disponible */
+        }
       }
-      setMessage(`Saved! This score ranks #${data.rank}.`, 'ok');
+      setMessage(`Saved as ${data.name}${data.verified ? ' ✓' : ''}! This score ranks #${data.rank}.`, 'ok');
       nameInput.disabled = true;
+      guestLink.hidden = true;
+      accountLink.hidden = true;
       const game = pending.game;
       pending = null;
-      if (game === currentGame) load(game, name);
+      if (game === currentGame) load(game, data.name);
     } catch (_) {
       setMessage('Connection error. Try again.', 'error');
       submitBtn.disabled = false;
     }
+  });
+
+  signInLink.addEventListener('click', () => auth()?.signIn());
+  guestLink.addEventListener('click', () => {
+    preferGuest = true;
+    syncMode();
+    nameInput.focus();
+  });
+  accountLink.addEventListener('click', () => {
+    preferGuest = false;
+    syncMode();
+  });
+  // Al iniciar o cerrar sesión, el formulario abierto se actualiza.
+  auth()?.onChange(() => {
+    if (pending) syncMode();
   });
 
   window.PPLeaderboard = { show: load, offer, hideOffer };
