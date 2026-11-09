@@ -66,3 +66,22 @@ neon-breakout/
 
 1. **Direct Browser Launch:** Double-click `play.html` in File Explorer to play immediately in any browser (`index.html` is the landing page).
 2. **Local Dev Server:** Run `node server.js` and open `http://localhost:3000` for the landing page or `http://localhost:3000/play.html` to play.
+
+---
+
+## 🏆 Global Ranking (Vercel)
+
+When deployed on Vercel, the arcade shows a global leaderboard per game. Players submit their score with just a name, no account needed.
+
+- `api/scores.mjs`: Vercel Function. `GET /api/scores?game=breakout` returns the top 10; `POST /api/scores` saves a score.
+- Database: Neon Postgres from the Vercel Marketplace (`DATABASE_URL`).
+- Pong ranks the longest rally against the AI.
+- On GitHub Pages or when opening the file directly there is no API, so the panel hides itself and the arcade works as before.
+
+Create the table once:
+
+```bash
+vercel env pull .env.local --yes
+npm install
+npm run db:init
+```

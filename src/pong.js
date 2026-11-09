@@ -42,6 +42,7 @@ class PongGame {
       speed: 8.5,
     };
     this.rally = 0;
+    this.maxRally = 0; // rally más largo de la partida, usado en el ranking global
     this.resetBall(1);
     this.notifyHud();
   }
@@ -200,6 +201,7 @@ class PongGame {
     const relY = (this.ball.y - (paddle.y + this.paddleHeight / 2)) / (this.paddleHeight / 2);
     const bounceAngle = relY * ((Math.PI * 55) / 180);
     this.rally++;
+    this.maxRally = Math.max(this.maxRally, this.rally);
     const currentSpeed = Math.min(14, Number(this.config.ballSpeed) + this.rally * 0.35);
 
     this.ball.vx = Math.cos(bounceAngle) * currentSpeed * dirX;
