@@ -957,19 +957,44 @@ function starPoints(cx, cy, n, r1, r2) {
   return p.join(' ');
 }
 const STICKERS = [
-  { w: 128, x: .70, y: .02, rot: 10, mobile: true, svg:
+  // ---- Genéricos (solo escritorio) ----
+  { w: 120, x: .70, y: .02, rot: 10, mobile: false, svg:
     `<svg viewBox="0 0 120 120"><polygon points="${starPoints(60,60,14,58,44)}" fill="${C.sunset}" stroke="${C.night}" stroke-width="4" stroke-linejoin="round"/>
      <text x="60" y="58" text-anchor="middle" font-family="Archivo Black, Impact, sans-serif" font-size="28" fill="${C.night}">60</text>
      <text x="60" y="80" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="14" fill="${C.night}">FPS</text></svg>` },
-  { w: 118, x: .04, y: .66, rot: -12, mobile: true, svg:
+  { w: 108, x: .04, y: .66, rot: -12, mobile: false, svg:
     `<svg viewBox="0 0 120 130"><rect x="10" y="78" width="100" height="44" rx="12" fill="${C.pink}" stroke="${C.night}" stroke-width="4"/>
      <rect x="54" y="34" width="12" height="50" fill="${C.night}"/>
      <circle cx="60" cy="30" r="24" fill="${C.heat}" stroke="${C.night}" stroke-width="4"/>
      <circle cx="52" cy="22" r="6" fill="${C.paper}"/>
      <circle cx="32" cy="100" r="8" fill="${C.paradise}" stroke="${C.night}" stroke-width="3"/>
      <circle cx="88" cy="100" r="8" fill="${C.sunset}" stroke="${C.night}" stroke-width="3"/></svg>` },
-  { w: 132, x: .52, y: .60, rot: 6, mobile: false, svg:
-    `<svg viewBox="0 0 130 104"><rect x="3" y="3" width="124" height="98" rx="14" fill="${C.paradise}" stroke="${C.night}" stroke-width="4"/>
+  { w: 140, x: .38, y: .02, rot: -6, mobile: false, svg:
+    `<svg viewBox="0 0 150 100"><path d="M6 6 H144 V70 H120 V94 H30 V70 H6 Z" fill="${C.paper}" stroke="${C.night}" stroke-width="4" stroke-linejoin="round"/>
+     <rect x="18" y="16" width="114" height="36" rx="4" fill="${C.heat}" stroke="${C.night}" stroke-width="3"/>
+     <text x="75" y="41" text-anchor="middle" font-family="Archivo Black, Impact, sans-serif" font-size="17" fill="${C.night}">CART 04</text>
+     <g fill="${C.night}">${[0,1,2,3,4,5].map(i => `<rect x="${42 + i * 12}" y="74" width="6" height="16"/>`).join('')}</g></svg>` },
+  { w: 96, x: .88, y: .72, rot: 14, mobile: false, svg:
+    `<svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="50" fill="${C.heat}" stroke="${C.night}" stroke-width="4"/>
+     <circle cx="55" cy="55" r="36" fill="none" stroke="${C.night}" stroke-width="3" stroke-dasharray="5 6"/>
+     <text x="55" y="66" text-anchor="middle" font-family="Archivo Black, Impact, sans-serif" font-size="30" fill="${C.night}">1UP</text></svg>` },
+
+  // ---- Un sticker por juego (escritorio y móvil) ----
+  // Block Breaker
+  { w: 120, x: .595, y: .18, mx: .75, my: .165, rot: -8, mobile: true, svg:
+    `<svg viewBox="0 0 130 110"><rect x="3" y="3" width="124" height="104" rx="14" fill="${C.night}" stroke="${C.night}" stroke-width="4"/>
+     <rect x="7" y="7" width="116" height="96" rx="11" fill="none" stroke="${C.paper}" stroke-width="2.5"/>
+     <g stroke="${C.night}" stroke-width="2.5">
+       ${[0,1,2,3].map(i => `<rect x="${16 + i * 25}" y="18" width="22" height="11" fill="${C.heat}"/>`).join('')}
+       ${[0,1,3].map(i => `<rect x="${16 + i * 25}" y="31" width="22" height="11" fill="${C.sunset}"/>`).join('')}
+       ${[1,2].map(i => `<rect x="${16 + i * 25}" y="44" width="22" height="11" fill="${C.pink}"/>`).join('')}
+     </g>
+     <path d="M80 50 L66 72" stroke="${C.paper}" stroke-width="2" stroke-dasharray="3 4" opacity=".7"/>
+     <circle cx="64" cy="76" r="6" fill="${C.paper}"/>
+     <rect x="42" y="88" width="46" height="9" rx="3" fill="${C.heat}" stroke="${C.paper}" stroke-width="2"/></svg>` },
+  // Cyber Snake
+  { w: 128, x: .52, y: .60, mx: .06, my: .915, rot: 6, mobile: true, svg:
+    `<svg viewBox="0 0 130 104"><rect x="3" y="3" width="124" height="98" rx="14" fill="${C.paper}" stroke="${C.night}" stroke-width="4"/>
      <path d="M18 78 H50 V40 H84 V62 H98" fill="none" stroke="${C.night}" stroke-width="20" stroke-linejoin="miter" stroke-linecap="square"/>
      <path d="M18 78 H50 V40 H84 V62 H98" fill="none" stroke="${C.sunset}" stroke-width="12" stroke-linejoin="miter" stroke-linecap="square"/>
      <path d="M30 78 h6 M50 60 v6 M66 40 h6" stroke="${C.heat}" stroke-width="5"/>
@@ -978,15 +1003,21 @@ const STICKERS = [
      <path d="M114 66 h7 m-3 -3 l3 3 l-3 3" fill="none" stroke="${C.heat}" stroke-width="3" stroke-linecap="square"/>
      <circle cx="104" cy="26" r="9" fill="${C.heat}" stroke="${C.night}" stroke-width="3.5"/>
      <path d="M104 17 q4 -6 9 -4" fill="none" stroke="${C.night}" stroke-width="3" stroke-linecap="round"/></svg>` },
-  { w: 150, x: .38, y: .02, rot: -6, mobile: false, svg:
-    `<svg viewBox="0 0 150 100"><path d="M6 6 H144 V70 H120 V94 H30 V70 H6 Z" fill="${C.paper}" stroke="${C.night}" stroke-width="4" stroke-linejoin="round"/>
-     <rect x="18" y="16" width="114" height="36" rx="4" fill="${C.heat}" stroke="${C.night}" stroke-width="3"/>
-     <text x="75" y="41" text-anchor="middle" font-family="Archivo Black, Impact, sans-serif" font-size="17" fill="${C.night}">CART 04</text>
-     <g fill="${C.night}">${[0,1,2,3,4,5].map(i => `<rect x="${42 + i * 12}" y="74" width="6" height="16"/>`).join('')}</g></svg>` },
-  { w: 104, x: .88, y: .70, rot: 14, mobile: true, svg:
-    `<svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="50" fill="${C.heat}" stroke="${C.night}" stroke-width="4"/>
-     <circle cx="55" cy="55" r="36" fill="none" stroke="${C.night}" stroke-width="3" stroke-dasharray="5 6"/>
-     <text x="55" y="66" text-anchor="middle" font-family="Archivo Black, Impact, sans-serif" font-size="30" fill="${C.night}">1UP</text></svg>` }
+  // Pong Arena
+  { w: 124, x: .45, y: .82, mx: .62, my: .915, rot: -4, mobile: true, svg:
+    `<svg viewBox="0 0 130 100"><rect x="3" y="3" width="124" height="94" rx="14" fill="${C.sunset}" stroke="${C.night}" stroke-width="4"/>
+     <line x1="65" y1="12" x2="65" y2="88" stroke="${C.night}" stroke-width="4" stroke-dasharray="7 7"/>
+     <rect x="16" y="22" width="10" height="40" rx="3" fill="${C.night}"/>
+     <rect x="104" y="40" width="10" height="40" rx="3" fill="${C.heat}" stroke="${C.night}" stroke-width="3"/>
+     <path d="M34 44 L72 58" stroke="${C.night}" stroke-width="2.5" stroke-dasharray="3 5"/>
+     <rect x="76" y="54" width="12" height="12" fill="${C.paper}" stroke="${C.night}" stroke-width="3"/>
+     <text x="38" y="86" text-anchor="middle" font-family="Archivo Black, Impact, sans-serif" font-size="14" fill="${C.night}">7</text>
+     <text x="92" y="30" text-anchor="middle" font-family="Archivo Black, Impact, sans-serif" font-size="14" fill="${C.night}">5</text></svg>` },
+  // Space Defender: invasor restaurado
+  { w: 126, x: .86, y: .02, mx: .72, my: .066, rot: 8, mobile: true, svg:
+    `<svg viewBox="0 0 130 104"><rect x="3" y="3" width="124" height="98" rx="14" fill="${C.paradise}" stroke="${C.night}" stroke-width="4"/>
+     <g transform="translate(21,14)">${pixels(INVADER, 8, 0, 0, C.paper)}</g>
+     <rect x="18" y="82" width="94" height="8" rx="4" fill="${C.sunset}"/></svg>` }
 ];
 
 const layer = $('#stickers');
@@ -1010,7 +1041,11 @@ function sizeStickers(initial) {
   stickers.forEach(s => {
     s.el.style.width = (s.d.w * k) + 'px';
     s.w = s.el.offsetWidth; s.h = s.el.offsetHeight || s.w;
-    if (initial) { s.x = s.d.x * W; s.y = s.d.y * H + 70; }
+    if (initial) {
+      const m = innerWidth <= 700 && s.d.mx != null;   // posiciones propias en móvil
+      s.x = (m ? s.d.mx : s.d.x) * W;
+      s.y = m ? s.d.my * H : s.d.y * H + 70;
+    }
     s.x = clamp(s.x, 0, Math.max(0, W - s.w)); s.y = clamp(s.y, 0, Math.max(0, H - s.h));
   });
 }
