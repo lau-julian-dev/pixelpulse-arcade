@@ -93,6 +93,17 @@
                 Bounce the ball, chain combos, grab power-ups, and customize your physics on the right!
               </p>
 
+              <!-- Envío al ranking global (se muestra al terminar una partida) -->
+              <form id="rank-form" class="rank-form" hidden autocomplete="off" novalidate>
+                <p class="rank-title">Global ranking score: <b id="rank-score">0</b></p>
+                <div class="rank-row">
+                  <label class="sr-only" for="rank-name">Your name</label>
+                  <input id="rank-name" name="name" type="text" maxlength="16" placeholder="Your name" spellcheck="false" />
+                  <button id="rank-submit" class="btn btn-secondary" type="submit">Submit</button>
+                </div>
+                <p id="rank-msg" class="rank-msg" role="status" aria-live="polite"></p>
+              </form>
+
               <div class="overlay-buttons">
                 <button id="btn-start" class="btn btn-primary btn-large">
                   ▶️ PLAY NOW (SPACE)
@@ -325,6 +336,16 @@
             Hit the ball with the edges of your paddle to angle your shots toward hard-to-reach bricks!
           </p>
         </div>
+
+        <!-- Ranking global (Vercel Functions + Neon). Se oculta si no hay API. -->
+        <section class="leaderboard" id="leaderboard" aria-labelledby="lb-title">
+          <div class="lb-head">
+            <span class="panel-tag">GLOBAL RANKING</span>
+            <h3 id="lb-title"><span id="lb-game">Block Breaker</span></h3>
+            <p class="lb-note" id="lb-note">Best score per player</p>
+          </div>
+          <ol class="lb-list" id="lb-list"></ol>
+        </section>
       </aside>
     </div>
   </div>
@@ -336,6 +357,7 @@
   <script src="src/snake.js"></script>
   <script src="src/pong.js"></script>
   <script src="src/invaders.js"></script>
+  <script src="src/leaderboard.js"></script>
   <script src="src/game.js"></script>
 </body>
 </html>

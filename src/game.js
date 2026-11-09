@@ -587,6 +587,8 @@ class ArcadePlaygroundHub {
     this.currentGame.reset();
     this.state = 'MENU';
     this.showOverlay(meta.badge, meta.title, meta.desc, '▶️ PLAY NOW (SPACE)');
+    window.PPLeaderboard?.hideOffer();
+    window.PPLeaderboard?.show(gameKey);
   }
 
   renderHUD(data) {
@@ -605,6 +607,20 @@ class ArcadePlaygroundHub {
     if (modalInfo) {
       this.showOverlay(modalInfo.subtitle, modalInfo.title, modalInfo.desc, modalInfo.buttonText);
     }
+    if (newState === 'GAME_OVER' || newState === 'VICTORY') {
+      window.PPLeaderboard?.offer(this.activeGameKey, this.rankingScore());
+    } else {
+      window.PPLeaderboard?.hideOffer();
+    }
+  }
+
+  /** Puntaje que cuenta para el ranking global. En Pong: rally más largo contra la IA. */
+  rankingScore() {
+    const game = this.currentGame;
+    if (this.activeGameKey === 'pong') {
+      return game.config.mode === '1p' ? game.maxRally || 0 : 0;
+    }
+    return game.score || 0;
   }
 
   showOverlay(subtitle, title, desc, buttonText) {
@@ -616,6 +632,7 @@ class ArcadePlaygroundHub {
   }
 
   startOrResume() {
+    window.PPLeaderboard?.hideOffer();
     this.sound.init();
     if (this.state === 'GAME_OVER' || this.state === 'VICTORY') {
       this.currentGame.reset();
@@ -667,7 +684,10 @@ class ArcadePlaygroundHub {
     });
 
     // Keyboard routing
+    const isTyping = (e) => e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"]');
+
     window.addEventListener('keydown', (e) => {
+      if (isTyping(e)) return;
       if (e.key === 'p' || e.key === 'P') {
         this.togglePause();
         return;
@@ -683,6 +703,7 @@ class ArcadePlaygroundHub {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (isTyping(e)) return;
       if (this.currentGame.handleKeyUp) {
         this.currentGame.handleKeyUp(e);
       }

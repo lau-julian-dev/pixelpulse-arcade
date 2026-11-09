@@ -1,0 +1,15 @@
+{
+  "name": "pixelpulse-arcade",
+  "private": true,
+  "description": "Arcade web modular con ranking global sobre Vercel Functions y Neon Postgres.",
+  "scripts": {
+    "start": "node server.js",
+    "db:init": "node --env-file=.env.local scripts/db-init.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  }
+}
