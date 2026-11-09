@@ -590,6 +590,7 @@ class ArcadePlaygroundHub {
     this.initDailyChallenge();
     this.switchGame('breakout');
     this.openSharedLevel();
+    this.applyGameFlags();
 
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -599,6 +600,7 @@ class ArcadePlaygroundHub {
   }
 
   switchGame(gameKey) {
+    if (window.PPFlags && !window.PPFlags.isGameOn(gameKey)) return;
     this.activeGameKey = gameKey;
     this.effects.clear();
     document.getElementById('powerup-bar').innerHTML = '';
@@ -994,6 +996,22 @@ class ArcadePlaygroundHub {
       window.PPLeaderboard?.hideOffer();
       window.PPLeaderboard?.show('breakout', daily);
     });
+  }
+
+  /** Si el juego activo está apagado en Global Config, cambia al primero disponible. */
+  async applyGameFlags() {
+    const flags = window.PPFlags;
+    if (!flags) return;
+    await flags.ready;
+    if (flags.isGameOn(this.activeGameKey)) return;
+    const next = Object.keys(this.cartridges).find((key) => flags.isGameOn(key));
+    if (next) {
+      this.switchGame(next);
+    } else {
+      this.state = 'PAUSED';
+      this.showOverlay('ARCADE CLOSED', 'BE RIGHT BACK', 'All games are offline for a moment. Check back soon!', '⏳ PLEASE WAIT');
+      document.getElementById('overlay-buttons').hidden = true;
+    }
   }
 
   /** true si hay inicio de sesión disponible, no hay sesión y aún no se eligió jugar como invitado. */

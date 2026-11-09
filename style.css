@@ -1072,3 +1072,32 @@ input[type="range"]::-moz-range-thumb {
   font-size: 12px;
   color: var(--text-muted);
 }
+
+/* ---------- Interruptores de funciones (Global Config) ---------- */
+.ff-off-game-breakout .game-tab[data-game="breakout"],
+.ff-off-game-snake .game-tab[data-game="snake"],
+.ff-off-game-pong .game-tab[data-game="pong"],
+.ff-off-game-invaders .game-tab[data-game="invaders"],
+.ff-off-ranking #leaderboard,
+.ff-off-ranking #rank-form,
+.ff-off-signIn #auth-box,
+.ff-off-dailyChallenge #btn-daily,
+.ff-off-sharedLevels #share-box,
+.ff-off-shareCards #rank-share {
+  display: none !important;
+}
+
+.pp-banner {
+  border: var(--b);
+  border-radius: 14px;
+  box-shadow: var(--sh);
+  padding: 12px 18px;
+  font-weight: 700;
+  font-size: 15px;
+  text-align: center;
+  background: var(--sunset);
+  color: var(--night);
+}
+
+.pp-banner[data-tone="event"] { background: var(--heat); }
+.pp-banner[data-tone="warning"] { background: var(--paradise); color: var(--paper); }
