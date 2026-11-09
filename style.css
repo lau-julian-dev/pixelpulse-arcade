@@ -904,3 +904,89 @@ input[type="range"]::-moz-range-thumb {
 
 .rank-msg[data-tone="ok"] { color: var(--paradise); }
 .rank-msg[data-tone="error"] { color: #B23A1F; }
+
+/* ---------- Cuentas (Clerk) ---------- */
+.auth-box {
+  display: flex;
+  align-items: center;
+}
+
+.auth-box .btn-primary {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+.auth-user {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+}
+
+.lb-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--heat);
+  color: var(--night);
+  border: 2px solid var(--night);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: 1px;
+}
+
+.rank-as {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border: var(--b-thin);
+  border-radius: 10px;
+  background: var(--pink);
+}
+
+.rank-as b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.rank-links:not(:has(.link-btn:not([hidden]))) {
+  display: none;
+}
+
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: 700 13px var(--body);
+  color: var(--paradise);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: var(--night);
+  background: var(--sunset);
+}
+
+/* Cabecera compacta: cabe en una línea con el botón de inicio de sesión */
+.arcade-header { gap: 12px; }
+.game-tabs { gap: 8px; }
+.game-tab { padding: 8px 11px; }
+.quick-actions { gap: 8px; }
+.btn-icon { padding: 7px 9px; }

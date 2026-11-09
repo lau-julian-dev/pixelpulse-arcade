@@ -21,4 +21,8 @@ await sql`
 await sql`CREATE INDEX IF NOT EXISTS scores_game_score_idx ON scores (game, score DESC)`;
 await sql`CREATE INDEX IF NOT EXISTS scores_ip_recent_idx ON scores (ip_hash, created_at DESC)`;
 
+// Fase 2: cuentas de Clerk. user_id vacío = invitado.
+await sql`ALTER TABLE scores ADD COLUMN IF NOT EXISTS user_id text`;
+await sql`CREATE INDEX IF NOT EXISTS scores_game_user_idx ON scores (game, user_id)`;
+
 console.log('Tabla scores lista.');
