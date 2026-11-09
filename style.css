@@ -1006,3 +1006,23 @@ input[type="range"]::-moz-range-thumb {
   text-transform: none;
   letter-spacing: 0;
 }
+
+/* ---------- Niveles compartidos ---------- */
+.share-box {
+  border: 3px dashed rgba(53, 28, 77, .35);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.share-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#share-url {
+  font: 600 13px var(--mono);
+}

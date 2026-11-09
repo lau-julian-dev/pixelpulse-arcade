@@ -29,4 +29,17 @@ await sql`CREATE INDEX IF NOT EXISTS scores_game_user_idx ON scores (game, user_
 await sql`ALTER TABLE scores ADD COLUMN IF NOT EXISTS daily date`;
 await sql`CREATE INDEX IF NOT EXISTS scores_game_daily_idx ON scores (game, daily, score DESC)`;
 
+// Fase 4: niveles compartidos del editor de Block Breaker.
+await sql`
+  CREATE TABLE IF NOT EXISTS levels (
+    id         text        PRIMARY KEY CHECK (id ~ '^[A-Za-z0-9]{8}$'),
+    name       text        NOT NULL CHECK (char_length(name) BETWEEN 1 AND 24),
+    author     text        NOT NULL CHECK (char_length(author) BETWEEN 1 AND 16),
+    user_id    text,
+    grid       jsonb       NOT NULL,
+    ip_hash    text        NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
+await sql`CREATE INDEX IF NOT EXISTS levels_ip_recent_idx ON levels (ip_hash, created_at DESC)`;
+
 console.log('Tabla scores lista.');
