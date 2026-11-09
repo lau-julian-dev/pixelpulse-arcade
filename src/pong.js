@@ -17,7 +17,7 @@ class PongGame {
       mode: '1p',           // '1p' (vs AI) | '2p' (Local W/S vs Up/Down)
       aiDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
       ballSpeed: 7,
-      paddleColor: '#38bdf8',
+      paddleColor: '#FEB47B',
       winScore: 7,
     };
 
@@ -182,7 +182,7 @@ class PongGame {
     if (this.ball.x < -15) {
       this.p2.score++;
       this.sound.loseLife();
-      this.effects.spawnExplosion(30, this.ball.y, '#fb7185', 18, 1.1);
+      this.effects.spawnExplosion(30, this.ball.y, '#FF7E5F', 18, 1.1);
       this.checkMatchEnd(-1);
     } else if (this.ball.x > this.width + 15) {
       this.p1.score++;
@@ -208,7 +208,7 @@ class PongGame {
     this.effects.spawnExplosion(
       dirX > 0 ? paddle.x + this.paddleWidth : paddle.x,
       this.ball.y,
-      dirX > 0 ? this.config.paddleColor : '#fb7185',
+      dirX > 0 ? this.config.paddleColor : '#FF7E5F',
       8,
       0.7
     );
@@ -240,12 +240,12 @@ class PongGame {
     const ctx = this.ctx;
 
     // Court background
-    ctx.fillStyle = '#0f1325';
+    ctx.fillStyle = '#351C4D';
     ctx.fillRect(0, 0, this.width, this.height);
 
     // Center dashed line & circle
     ctx.save();
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+    ctx.strokeStyle = 'rgba(255, 253, 249, 0.2)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(this.width / 2, this.height / 2, 70, 0, Math.PI * 2);
@@ -260,7 +260,7 @@ class PongGame {
 
     // Big background score watermark
     ctx.save();
-    ctx.font = '800 72px "Segoe UI", sans-serif';
+    ctx.font = '72px "Archivo Black", "Segoe UI", sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.textAlign = 'center';
     ctx.fillText(String(this.p1.score), this.width / 2 - 110, 95);
@@ -277,7 +277,7 @@ class PongGame {
 
     // Right Paddle (AI / Player 2)
     ctx.save();
-    ctx.fillStyle = '#fb7185';
+    ctx.fillStyle = '#FF7E5F';
     ctx.beginPath();
     ctx.roundRect(this.p2.x, this.p2.y, this.paddleWidth, this.paddleHeight, 7);
     ctx.fill();
@@ -285,7 +285,7 @@ class PongGame {
 
     // Ball
     ctx.save();
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = '#FFFDF9';
     ctx.beginPath();
     ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
     ctx.fill();
