@@ -31,6 +31,10 @@
   const signInLink = document.getElementById('rank-signin');
   const guestLink = document.getElementById('rank-guest');
   const accountLink = document.getElementById('rank-account');
+  const shareBox = document.getElementById('rank-share');
+  const shareBtn = document.getElementById('rank-share-btn');
+  const copyBtn = document.getElementById('rank-copy');
+  let shareData = null; // { url, text } del último puntaje guardado
 
   let available = true;
   let loadedOnce = false;
@@ -168,6 +172,8 @@
     submitBtn.disabled = false;
     nameInput.disabled = false;
     setMessage('');
+    shareBox.hidden = true;
+    shareData = null;
     syncMode();
     form.hidden = false;
   }
@@ -222,6 +228,14 @@
         }
       }
       setMessage(`Saved as ${data.name}${data.verified ? ' ✓' : ''}! This score ranks #${data.rank}.`, 'ok');
+      if (data.id) {
+        const label = pending.daily ? `the Daily Challenge “${pending.daily.name}”` : LABELS[pending.game];
+        shareData = {
+          url: new URL(`s/${data.id}`, window.location.href).href,
+          text: `I ranked #${data.rank} in ${label} on PixelPulse. Can you beat it?`,
+        };
+        shareBox.hidden = false;
+      }
       nameInput.disabled = true;
       guestLink.hidden = true;
       accountLink.hidden = true;
@@ -235,6 +249,34 @@
       submitBtn.disabled = false;
     }
   });
+
+  // Compartir: menú nativo del sistema si existe; si no, copia el link.
+  async function copyShareLink() {
+    if (!shareData) return;
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      copyBtn.textContent = 'Copied!';
+    } catch (_) {
+      window.prompt('Copy this link:', shareData.url);
+    }
+    setTimeout(() => {
+      copyBtn.textContent = 'Copy link';
+    }, 1600);
+  }
+
+  shareBtn.addEventListener('click', async () => {
+    if (!shareData) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'PixelPulse Arcade', text: shareData.text, url: shareData.url });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    copyShareLink();
+  });
+  copyBtn.addEventListener('click', copyShareLink);
 
   signInLink.addEventListener('click', () => auth()?.signIn());
   guestLink.addEventListener('click', () => {

@@ -78,6 +78,7 @@ When deployed on Vercel, the arcade shows a global leaderboard per game. Players
 - Pong ranks the longest rally against the AI.
 - Daily Challenge (`api/daily.mjs`): a Block Breaker level generated from the UTC date, the same for everyone, with locked speed, paddle and power-ups and its own ranking.
 - Shared levels (`api/levels.mjs`, `src/share.js`): the Block Breaker editor can publish a level and get a `play.html?level=CODE` link. Custom and shared levels don't count for the global ranking.
+- Share cards (`api/card.mjs`, `api/s.mjs`): after saving a score, players get a `/s/ID` link. Social networks show a 1200 × 630 card generated with `@vercel/og`; people are sent to the arcade.
 - Optional sign-in with Clerk (`api/config.mjs`, `src/auth.js`). Signed-in players submit with their account name and get a ✓ badge. Guests can still play and submit with any name.
 - On GitHub Pages or when opening the file directly there is no API, so the panel hides itself and the arcade works as before.
 

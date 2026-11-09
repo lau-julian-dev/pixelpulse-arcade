@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/s/:id", "destination": "/api/s?id=:id" }
+  ],
+  "functions": {
+    "api/card.mjs": {
+      "includeFiles": "node_modules/@fontsource/{archivo-black,space-grotesk}/files/*-latin-*-normal.woff"
+    }
+  }
+}
