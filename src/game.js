@@ -18,7 +18,7 @@ class BreakoutGame {
     this.config = {
       ballSpeed: 6.5,
       paddleBaseWidth: 128,
-      paddleColor: '#38bdf8',
+      paddleColor: '#FEB47B',
       powerUpChance: 0.24,
     };
 
@@ -202,7 +202,7 @@ class BreakoutGame {
     this.effects.spawnExplosion(
       sourceBrick.x + sourceBrick.width / 2,
       sourceBrick.y + sourceBrick.height / 2,
-      '#fb7185',
+      '#FF7E5F',
       24,
       1.4
     );
@@ -266,9 +266,9 @@ class BreakoutGame {
     if (!bar) return;
     bar.innerHTML = '';
     const items = [
-      { key: 'wide', label: '↔️ Wide', color: '#34d399' },
-      { key: 'laser', label: '🔫 Laser (Space/Click)', color: '#fb7185' },
-      { key: 'fire', label: '🔥 Fireball', color: '#fb923c' },
+      { key: 'wide', label: '↔️ Wide', color: '#F5AB99' },
+      { key: 'laser', label: '🔫 Laser (Space/Click)', color: '#FF7E5F' },
+      { key: 'fire', label: '🔥 Fireball', color: '#FF9966' },
     ];
     items.forEach((item) => {
       const frames = this.timers[item.key];
@@ -276,7 +276,7 @@ class BreakoutGame {
         const secs = Math.ceil(frames / 60);
         const tag = document.createElement('div');
         tag.className = 'active-powerup-tag';
-        tag.style.borderColor = item.color;
+        tag.style.background = item.color;
         tag.textContent = `${item.label}: ${secs}s`;
         bar.appendChild(tag);
       }
@@ -364,7 +364,7 @@ class BreakoutGame {
 
           if (brick.indestructible) {
             this.sound.wallHit();
-            this.effects.spawnExplosion(closestX, closestY, '#cbd5e1', 5, 0.6);
+            this.effects.spawnExplosion(closestX, closestY, '#E8DCEF', 5, 0.6);
           } else {
             const destroyed = brick.hit(ball.fireball);
             if (destroyed) {
@@ -477,11 +477,11 @@ class BreakoutGame {
 
   draw() {
     const ctx = this.ctx;
-    ctx.fillStyle = '#0d1224';
+    ctx.fillStyle = '#351C4D';
     ctx.fillRect(0, 0, this.width, this.height);
 
     // Subtle arcade dot matrix background
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.06)';
+    ctx.fillStyle = 'rgba(255, 253, 249, 0.06)';
     for (let x = 30; x < this.width; x += 45) {
       for (let y = 30; y < this.height; y += 45) {
         ctx.fillRect(x, y, 2, 2);

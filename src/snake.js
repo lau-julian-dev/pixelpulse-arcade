@@ -19,7 +19,7 @@ class SnakeGame {
 
     // Customizable Settings
     this.config = {
-      snakeColor: '#34d399', // Mint green default
+      snakeColor: '#F5AB99', // Mint green default
       speedLevel: 'normal',  // 'chill' | 'normal' | 'fast' | 'hyper'
       wrapWalls: false,
       fruitCount: 1,
@@ -76,9 +76,9 @@ class SnakeGame {
 
   spawnFruit() {
     const types = [
-      { color: '#fb7185', points: 10, label: 'Apple' },
-      { color: '#fbbf24', points: 25, label: 'Golden Berry' },
-      { color: '#38bdf8', points: 15, label: 'Power Plum' },
+      { color: '#FF7E5F', points: 10, label: 'Apple' },
+      { color: '#FFFDF9', points: 25, label: 'Golden Berry' },
+      { color: '#FEB47B', points: 15, label: 'Power Plum' },
     ];
     // 20% chance of special fruit
     const roll = Math.random();
@@ -203,7 +203,7 @@ class SnakeGame {
     // Subtle checkerboard grid
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
-        ctx.fillStyle = (r + c) % 2 === 0 ? '#111629' : '#0e1324';
+        ctx.fillStyle = (r + c) % 2 === 0 ? '#3B2156' : '#351C4D';
         ctx.fillRect(c * cs, r * cs, cs, cs);
       }
     }
@@ -211,8 +211,8 @@ class SnakeGame {
     // Border indicator for solid vs portal walls
     ctx.save();
     ctx.strokeStyle = this.config.wrapWalls
-      ? 'rgba(56, 189, 248, 0.4)'
-      : 'rgba(251, 113, 133, 0.55)';
+      ? 'rgba(254, 180, 123, 0.4)'
+      : 'rgba(255, 126, 95, 0.55)';
     ctx.lineWidth = 4;
     if (this.config.wrapWalls) {
       ctx.setLineDash([10, 8]);
@@ -257,7 +257,7 @@ class SnakeGame {
 
       // Cute arcade eyes on the head
       if (isHead) {
-        ctx.fillStyle = '#0f1221';
+        ctx.fillStyle = '#351C4D';
         const eyeOffsetX = this.dir.y !== 0 ? 5 : this.dir.x > 0 ? 4 : -4;
         const eyeOffsetY = this.dir.x !== 0 ? 5 : this.dir.y > 0 ? 4 : -4;
         const cx = x + cs / 2;

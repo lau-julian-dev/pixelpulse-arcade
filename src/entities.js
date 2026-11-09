@@ -13,7 +13,7 @@ class Paddle {
     this.x = (canvasWidth - this.width) / 2;
     this.y = canvasHeight - 38;
     this.speed = 9.5;
-    this.color = '#38bdf8';
+    this.color = '#FEB47B';
     this.laserActive = false;
   }
 
@@ -55,7 +55,7 @@ class Paddle {
 
     // Laser turrets if active
     if (this.laserActive) {
-      ctx.fillStyle = '#fb7185';
+      ctx.fillStyle = '#FF7E5F';
       ctx.fillRect(this.x + 5, this.y - 6, 6, 7);
       ctx.fillRect(this.x + this.width - 11, this.y - 6, 6, 7);
     }
@@ -139,14 +139,14 @@ class Ball {
       ctx.beginPath();
       ctx.arc(point.x, point.y, this.radius * ratio * 0.8, 0, Math.PI * 2);
       ctx.fillStyle = this.fireball
-        ? `rgba(251, 146, 60, ${ratio * 0.35})`
-        : `rgba(148, 163, 184, ${ratio * 0.25})`;
+        ? `rgba(255, 126, 95, ${ratio * 0.35})`
+        : `rgba(255, 253, 249, ${ratio * 0.25})`;
       ctx.fill();
     }
 
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.fireball ? '#fb923c' : this.color;
+    ctx.fillStyle = this.fireball ? '#FF9966' : this.color;
     ctx.fill();
     ctx.restore();
   }
@@ -169,11 +169,11 @@ class Brick {
   }
 
   getColor() {
-    if (this.indestructible) return '#64748b';
-    if (this.explosive) return '#fb7185';
-    if (this.hp === 3) return '#a78bfa';
-    if (this.hp === 2) return '#fb923c';
-    const rowColors = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#60a5fa'];
+    if (this.indestructible) return '#8C7A9C';
+    if (this.explosive) return '#FF7E5F';
+    if (this.hp === 3) return '#B48BC4';
+    if (this.hp === 2) return '#FF9966';
+    const rowColors = ['#FEB47B', '#F5AB99', '#FFFDF9', '#FFC2B0', '#D9B8E6'];
     return rowColors[this.row % rowColors.length];
   }
 
@@ -207,19 +207,19 @@ class Brick {
     ctx.roundRect(this.x + 3, this.y + 2, this.width - 6, 4, 2);
     ctx.fill();
 
-    ctx.font = 'bold 11px "Segoe UI", sans-serif';
+    ctx.font = 'bold 11px "Space Grotesk", "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     if (this.explosive) {
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#351C4D';
       ctx.fillText('TNT', this.x + this.width / 2, this.y + this.height / 2 + 1);
     } else if (this.indestructible) {
-      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeStyle = '#E8DCEF';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(this.x + 2, this.y + 2, this.width - 4, this.height - 4);
     } else if (this.hp > 1) {
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#351C4D';
       ctx.fillText(`${this.hp}x`, this.x + this.width / 2, this.y + this.height / 2 + 1);
     }
 
@@ -228,11 +228,11 @@ class Brick {
 }
 
 const POWERUP_TYPES = [
-  { id: 'MULTI', label: '⚡ MULTI-BALL', color: '#38bdf8' },
-  { id: 'WIDE', label: '↔️ WIDE PADDLE', color: '#34d399' },
-  { id: 'LASER', label: '🔫 LASER CANNON', color: '#fb7185' },
-  { id: 'FIRE', label: '🔥 FIREBALL', color: '#fb923c' },
-  { id: 'LIFE', label: '❤️ +1 LIFE', color: '#f472b6' },
+  { id: 'MULTI', label: '⚡ MULTI-BALL', color: '#FEB47B' },
+  { id: 'WIDE', label: '↔️ WIDE PADDLE', color: '#F5AB99' },
+  { id: 'LASER', label: '🔫 LASER CANNON', color: '#FF7E5F' },
+  { id: 'FIRE', label: '🔥 FIREBALL', color: '#FF9966' },
+  { id: 'LIFE', label: '❤️ +1 LIFE', color: '#FFC2B0' },
 ];
 
 class PowerUp {
@@ -262,8 +262,8 @@ class PowerUp {
     ctx.roundRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height, 8);
     ctx.fill();
 
-    ctx.fillStyle = '#0f1221';
-    ctx.font = 'bold 10px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#351C4D';
+    ctx.font = 'bold 10px "Space Grotesk", "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(this.info.id, this.x, this.y + 1);
@@ -291,7 +291,7 @@ class Laser {
   draw(ctx) {
     if (!this.alive) return;
     ctx.save();
-    ctx.fillStyle = '#fb7185';
+    ctx.fillStyle = '#FF7E5F';
     ctx.fillRect(this.x - this.width / 2, this.y, this.width, this.height);
     ctx.restore();
   }
