@@ -97,12 +97,13 @@ export async function POST(request) {
       return json({ error: 'Too many submissions. Try again in a minute.' }, 429);
     }
 
-    await sql`
+    const [{ id }] = await sql`
       INSERT INTO scores (game, name, score, ip_hash, user_id, daily)
-      VALUES (${game}, ${name}, ${score}, ${ipHash}, ${userId}, ${daily}::date)`;
+      VALUES (${game}, ${name}, ${score}, ${ipHash}, ${userId}, ${daily}::date)
+      RETURNING id::text AS id`;
 
     const rank = await rankFor(sql, game, daily, score);
-    return json({ ok: true, rank, name, verified: Boolean(userId), daily }, 201);
+    return json({ ok: true, id, rank, name, verified: Boolean(userId), daily }, 201);
   } catch (err) {
     console.error('POST /api/scores', err);
     return json({ error: 'Could not save the score.' }, 500);

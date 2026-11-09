@@ -1026,3 +1026,11 @@ input[type="range"]::-moz-range-thumb {
 #share-url {
   font: 600 13px var(--mono);
 }
+
+/* ---------- Compartir puntaje ---------- */
+.rank-share {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
