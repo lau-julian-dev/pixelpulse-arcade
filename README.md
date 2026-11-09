@@ -76,6 +76,7 @@ When deployed on Vercel, the arcade shows a global leaderboard per game. Players
 - `api/scores.mjs`: Vercel Function. `GET /api/scores?game=breakout` returns the top 10; `POST /api/scores` saves a score.
 - Database: Neon Postgres from the Vercel Marketplace (`DATABASE_URL`).
 - Pong ranks the longest rally against the AI.
+- Daily Challenge (`api/daily.mjs`): a Block Breaker level generated from the UTC date, the same for everyone, with locked speed, paddle and power-ups and its own ranking.
 - Optional sign-in with Clerk (`api/config.mjs`, `src/auth.js`). Signed-in players submit with their account name and get a ✓ badge. Guests can still play and submit with any name.
 - On GitHub Pages or when opening the file directly there is no API, so the panel hides itself and the arcade works as before.
 

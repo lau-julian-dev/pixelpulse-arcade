@@ -990,3 +990,19 @@ input[type="range"]::-moz-range-thumb {
 .game-tab { padding: 8px 11px; }
 .quick-actions { gap: 8px; }
 .btn-icon { padding: 7px 9px; }
+
+/* ---------- Reto diario ---------- */
+.daily-btn {
+  margin-top: 8px;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.daily-btn small {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+}

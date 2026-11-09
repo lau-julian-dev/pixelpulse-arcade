@@ -25,4 +25,8 @@ await sql`CREATE INDEX IF NOT EXISTS scores_ip_recent_idx ON scores (ip_hash, cr
 await sql`ALTER TABLE scores ADD COLUMN IF NOT EXISTS user_id text`;
 await sql`CREATE INDEX IF NOT EXISTS scores_game_user_idx ON scores (game, user_id)`;
 
+// Fase 3: reto diario. daily vacío = ranking histórico.
+await sql`ALTER TABLE scores ADD COLUMN IF NOT EXISTS daily date`;
+await sql`CREATE INDEX IF NOT EXISTS scores_game_daily_idx ON scores (game, daily, score DESC)`;
+
 console.log('Tabla scores lista.');

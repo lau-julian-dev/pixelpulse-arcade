@@ -35,6 +35,7 @@
   let available = true;
   let loadedOnce = false;
   let currentGame = 'breakout';
+  let currentDaily = null; // reto diario mostrado en el panel, o null
   let pending = null;
   let requestId = 0;
   let preferGuest = false;
@@ -113,17 +114,29 @@
     );
   }
 
-  async function load(game, highlightName) {
+  /**
+   * Carga el ranking de un juego. Con `daily` ({ date, name }) carga el del reto diario.
+   */
+  async function load(game, daily, highlightName, fresh = false) {
     currentGame = game;
-    gameLabel.textContent = LABELS[game] || game;
-    note.textContent = NOTES[game] || 'Best score per player';
+    currentDaily = daily || null;
+    if (currentDaily) {
+      gameLabel.textContent = `★ Daily: ${currentDaily.name}`;
+      note.textContent = `Today’s challenge (${currentDaily.date}, UTC)`;
+    } else {
+      gameLabel.textContent = LABELS[game] || game;
+      note.textContent = NOTES[game] || 'Best score per player';
+    }
     if (!available) return;
 
     const id = ++requestId;
     if (!loadedOnce) emptyRow('Loading…');
 
+    const dailyParam = currentDaily ? `&daily=${encodeURIComponent(currentDaily.date)}` : '';
+    // Tras enviar un puntaje se salta la caché de 10 s para ver el resultado al instante.
+    const freshParam = fresh ? `&t=${Date.now()}` : '';
     try {
-      const res = await fetch(`${API}?game=${encodeURIComponent(game)}&limit=10`, {
+      const res = await fetch(`${API}?game=${encodeURIComponent(game)}&limit=10${dailyParam}${freshParam}`, {
         headers: { Accept: 'application/json' },
       });
       const type = res.headers.get('content-type') || '';
@@ -145,12 +158,12 @@
     }
   }
 
-  function offer(game, score) {
+  function offer(game, score, daily) {
     if (!available || !Number.isInteger(score) || score < 1) {
       hideOffer();
       return;
     }
-    pending = { game, score };
+    pending = { game, score, daily: daily || null };
     scoreOut.textContent = score.toLocaleString();
     submitBtn.disabled = false;
     nameInput.disabled = false;
@@ -188,7 +201,12 @@
       const res = await fetch(API, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ game: pending.game, name, score: pending.score }),
+        body: JSON.stringify({
+          game: pending.game,
+          name,
+          score: pending.score,
+          ...(pending.daily ? { daily: pending.daily.date } : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -207,9 +225,11 @@
       nameInput.disabled = true;
       guestLink.hidden = true;
       accountLink.hidden = true;
-      const game = pending.game;
+      const { game, daily } = pending;
       pending = null;
-      if (game === currentGame) load(game, data.name);
+      if (game === currentGame && (daily?.date ?? null) === (currentDaily?.date ?? null)) {
+        load(game, daily, data.name, true);
+      }
     } catch (_) {
       setMessage('Connection error. Try again.', 'error');
       submitBtn.disabled = false;
