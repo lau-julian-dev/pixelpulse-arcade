@@ -45,7 +45,8 @@ Designed using a clean **Cartridge / Plugin Architecture** where a central Arcad
 
 ```text
 neon-breakout/
-├── index.html          # Arcade cabinet shell, game tabs & live customizer sidebar
+├── index.html          # Landing page (Kinetic Neo-Brutalism, single file)
+├── play.html           # Arcade cabinet shell, game tabs & live customizer sidebar
 ├── style.css           # Clean, modern retro-pop arcade theme
 ├── server.js           # Zero-dependency Node.js local static server
 └── src/
@@ -63,5 +64,5 @@ neon-breakout/
 
 ## 🚀 How to Run
 
-1. **Direct Browser Launch:** Double-click `index.html` in File Explorer to play immediately in any browser.
-2. **Local Dev Server:** Run `node server.js` and open `http://localhost:3000`.
+1. **Direct Browser Launch:** Double-click `play.html` in File Explorer to play immediately in any browser (`index.html` is the landing page).
+2. **Local Dev Server:** Run `node server.js` and open `http://localhost:3000` for the landing page or `http://localhost:3000/play.html` to play.
