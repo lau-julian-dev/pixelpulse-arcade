@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { AuthError, getPlayer } from './_lib/auth.mjs';
 import { getSql, json } from './_lib/db.mjs';
+import { disabled, getFlags } from './_lib/flags.mjs';
 
 const ROWS = 8;
 const COLS = 11;
@@ -33,6 +34,9 @@ function isValidGrid(grid) {
 
 /** GET /api/levels?id=XXXXXXXX → nivel compartido. */
 export async function GET(request) {
+  const flags = await getFlags();
+  if (!flags.features.sharedLevels) return disabled('Shared levels are turned off right now.');
+
   const id = new URL(request.url).searchParams.get('id');
   if (!id || !ID_RE.test(id)) return json({ error: 'Invalid level link.' }, 400);
 
@@ -51,6 +55,9 @@ export async function GET(request) {
 
 /** POST /api/levels { grid, name, author? } → guarda el nivel y devuelve su código. */
 export async function POST(request) {
+  const flags = await getFlags();
+  if (!flags.features.sharedLevels) return disabled('Shared levels are turned off right now.');
+
   let body;
   try {
     body = await request.json();

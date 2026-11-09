@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { AuthError, getPlayer } from './_lib/auth.mjs';
 import { DATE_RE, todayUTC } from './_lib/daily.mjs';
 import { GAMES, getSql, isGame, json } from './_lib/db.mjs';
+import { disabled, getFlags } from './_lib/flags.mjs';
 import { rankFor, topScores } from './_lib/ranking.mjs';
 
 const NAME_RE = /^[\p{L}\p{N} _.-]{1,16}$/u;
@@ -21,6 +22,9 @@ export async function GET(request) {
   if (daily !== null && !DATE_RE.test(daily)) return json({ error: 'Invalid daily date.' }, 400);
 
   const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get('limit') ?? '10', 10) || 10));
+
+  const flags = await getFlags();
+  if (!flags.features.ranking) return disabled('The ranking is turned off right now.');
 
   try {
     const scores = await topScores(getSql(), game, daily, limit);
@@ -53,8 +57,13 @@ export async function POST(request) {
     return json({ error: 'Invalid score.' }, 400);
   }
 
+  const flags = await getFlags();
+  if (!flags.features.ranking) return disabled('The ranking is turned off right now.');
+  if (!flags.games[game]) return disabled('This game is turned off right now.');
+
   const daily = body?.daily ?? null;
   if (daily !== null) {
+    if (!flags.features.dailyChallenge) return disabled('The daily challenge is turned off right now.');
     if (game !== DAILY_GAME || typeof daily !== 'string' || !DATE_RE.test(daily)) {
       return json({ error: 'Invalid daily challenge.' }, 400);
     }
