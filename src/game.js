@@ -665,6 +665,7 @@ class ArcadePlaygroundHub {
   }
 
   showOverlay(subtitle, title, desc, buttonText) {
+    this.hideIdentityGate();
     document.getElementById('overlay-subtitle').textContent = subtitle;
     document.getElementById('overlay-title').textContent = title;
     document.getElementById('overlay-desc').textContent = desc;
@@ -673,6 +674,12 @@ class ArcadePlaygroundHub {
   }
 
   startOrResume() {
+    // Antes de la primera partida se elige jugar con cuenta o como invitado.
+    if (this.state === 'MENU' && this.needsIdentityChoice()) {
+      this.showIdentityGate();
+      return;
+    }
+    this.hideIdentityGate();
     window.PPLeaderboard?.hideOffer();
     this.sound.init();
     if (this.state === 'GAME_OVER' || this.state === 'VICTORY') {
@@ -987,6 +994,71 @@ class ArcadePlaygroundHub {
       window.PPLeaderboard?.hideOffer();
       window.PPLeaderboard?.show('breakout', daily);
     });
+  }
+
+  /** true si hay inicio de sesión disponible, no hay sesión y aún no se eligió jugar como invitado. */
+  needsIdentityChoice() {
+    const auth = window.PPAuth;
+    if (!auth?.enabled || auth.user) return false;
+    try {
+      return sessionStorage.getItem('pp_play_mode') !== 'guest';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  showIdentityGate() {
+    const gate = document.getElementById('identity-gate');
+    const nameInput = document.getElementById('gate-name');
+    if (!gate.dataset.bound) {
+      gate.dataset.bound = '1';
+      document.getElementById('gate-signin').addEventListener('click', () => window.PPAuth?.signIn());
+      const playAsGuest = () => {
+        const name = nameInput.value.trim().replace(/\s+/g, ' ');
+        if (name && !/^[\p{L}\p{N} _.-]{1,16}$/u.test(name)) {
+          nameInput.setCustomValidity('Use 1 to 16 letters, numbers, spaces, dots, dashes or underscores.');
+          nameInput.reportValidity();
+          return;
+        }
+        nameInput.setCustomValidity('');
+        try {
+          sessionStorage.setItem('pp_play_mode', 'guest');
+          if (name) localStorage.setItem('pp_player_name', name);
+        } catch (_) {
+          /* almacenamiento no disponible */
+        }
+        if (name) {
+          const rankName = document.getElementById('rank-name');
+          if (rankName) rankName.value = name;
+        }
+        this.startOrResume();
+      };
+      document.getElementById('gate-guest').addEventListener('click', playAsGuest);
+      nameInput.addEventListener('input', () => nameInput.setCustomValidity(''));
+      nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          playAsGuest();
+        }
+      });
+      // Si inicia sesión desde la ventana, la partida empieza sola.
+      window.PPAuth?.onChange((auth) => {
+        if (auth.user && !gate.hidden) this.startOrResume();
+      });
+    }
+    try {
+      nameInput.value = localStorage.getItem('pp_player_name') || '';
+    } catch (_) {
+      /* almacenamiento no disponible */
+    }
+    gate.hidden = false;
+    document.getElementById('overlay-buttons').hidden = true;
+    nameInput.focus();
+  }
+
+  hideIdentityGate() {
+    document.getElementById('identity-gate').hidden = true;
+    document.getElementById('overlay-buttons').hidden = false;
   }
 
   /** Abre el nivel de un link play.html?level=CODIGO, si lo hay. */

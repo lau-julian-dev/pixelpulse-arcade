@@ -119,7 +119,20 @@
                 </div>
               </form>
 
-              <div class="overlay-buttons">
+              <!-- Elegir cómo jugar: con cuenta o como invitado (solo si hay inicio de sesión) -->
+              <div id="identity-gate" class="identity-gate" hidden>
+                <p class="gate-title">How do you want to play?</p>
+                <button id="gate-signin" class="btn btn-primary btn-large" type="button">Sign in</button>
+                <p class="gate-or"><span>or</span></p>
+                <div class="rank-row">
+                  <label class="sr-only" for="gate-name">Guest name (optional)</label>
+                  <input id="gate-name" type="text" maxlength="16" placeholder="Guest name (optional)" spellcheck="false" />
+                  <button id="gate-guest" class="btn btn-secondary" type="button">Play as guest</button>
+                </div>
+                <p class="gate-note">Signed-in players get a ✓ in the ranking. Guests can still submit scores with a name.</p>
+              </div>
+
+              <div class="overlay-buttons" id="overlay-buttons">
                 <button id="btn-start" class="btn btn-primary btn-large">
                   ▶️ PLAY NOW (SPACE)
                 </button>
