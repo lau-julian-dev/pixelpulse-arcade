@@ -589,6 +589,7 @@ class ArcadePlaygroundHub {
     this.initLevelEditor();
     this.initDailyChallenge();
     this.switchGame('breakout');
+    this.openSharedLevel();
 
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -658,6 +659,8 @@ class ArcadePlaygroundHub {
     if (this.activeGameKey === 'pong') {
       return game.config.mode === '1p' ? game.maxRally || 0 : 0;
     }
+    // Los niveles del editor o compartidos no cuentan: serían fáciles de inflar.
+    if (this.activeGameKey === 'breakout' && game.isCustomLevel && !game.daily) return 0;
     return game.score || 0;
   }
 
@@ -921,6 +924,7 @@ class ArcadePlaygroundHub {
     };
 
     document.getElementById('btn-editor').addEventListener('click', openEditor);
+    window.PPShare?.init(() => customGrid);
     document.getElementById('btn-close-editor').addEventListener('click', closeEditor);
 
     document.getElementById('btn-clear-grid').addEventListener('click', () => {
@@ -983,6 +987,28 @@ class ArcadePlaygroundHub {
       window.PPLeaderboard?.hideOffer();
       window.PPLeaderboard?.show('breakout', daily);
     });
+  }
+
+  /** Abre el nivel de un link play.html?level=CODIGO, si lo hay. */
+  async openSharedLevel() {
+    const level = await window.PPShare?.loadFromUrl();
+    if (!level) return;
+    if (level.error) {
+      this.showOverlay('SHARED LEVEL', 'LEVEL NOT AVAILABLE', level.error, '▶️ PLAY NOW (SPACE)');
+      return;
+    }
+    if (this.activeGameKey !== 'breakout') this.switchGame('breakout');
+    this.effects.clear();
+    this.cartridges.breakout.loadCustomStage(level.grid);
+    this.state = 'MENU';
+    this.showOverlay(
+      `SHARED LEVEL // BY ${level.author.toUpperCase()}${level.verified ? ' ✓' : ''}`,
+      level.name.toUpperCase(),
+      'A Block Breaker level made by a player. Custom levels don’t count for the global ranking.',
+      '▶️ PLAY LEVEL (SPACE)'
+    );
+    window.PPLeaderboard?.hideOffer();
+    window.PPLeaderboard?.show('breakout', null);
   }
 
   loop(timestamp) {

@@ -154,6 +154,22 @@
                 <button id="btn-mirror-grid" class="btn btn-secondary">Mirror Left → Right</button>
                 <button id="btn-play-custom" class="btn btn-primary">▶️ Play Custom Stage</button>
               </div>
+
+              <!-- Compartir el nivel con un link (Vercel). Oculto si no hay API. -->
+              <div class="share-box" id="share-box" hidden>
+                <p class="share-title">🔗 Share this level</p>
+                <div class="rank-row">
+                  <label class="sr-only" for="share-name">Level name</label>
+                  <input id="share-name" type="text" maxlength="24" placeholder="Name your level" spellcheck="false" />
+                  <button id="btn-share-level" class="btn btn-secondary" type="button">Get link</button>
+                </div>
+                <div class="rank-row" id="share-result" hidden>
+                  <label class="sr-only" for="share-url">Share link</label>
+                  <input id="share-url" type="text" readonly />
+                  <button id="btn-copy-share" class="btn btn-secondary" type="button">Copy</button>
+                </div>
+                <p id="share-msg" class="rank-msg" role="status" aria-live="polite"></p>
+              </div>
             </div>
           </div>
         </div>
@@ -373,6 +389,7 @@
   <script src="src/invaders.js"></script>
   <script src="src/auth.js"></script>
   <script src="src/leaderboard.js"></script>
+  <script src="src/share.js"></script>
   <script src="src/game.js"></script>
 </body>
 </html>
