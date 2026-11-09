@@ -9,6 +9,15 @@
   const userSlot = document.getElementById('auth-user');
   const listeners = new Set();
   let clerk = null;
+  let settled = false;
+  let settle;
+  // Se resuelve cuando se sabe si hay inicio de sesión (Clerk cargado, sin configuración o con error).
+  const ready = new Promise((resolve) => {
+    settle = () => {
+      settled = true;
+      resolve();
+    };
+  });
 
   /** Mismo criterio que el servidor para el nombre visible en el ranking. */
   function displayName(user) {
@@ -23,6 +32,10 @@
   }
 
   const api = {
+    ready,
+    get settled() {
+      return settled;
+    },
     get enabled() {
       return Boolean(clerk);
     },
@@ -106,5 +119,5 @@
   }
 
   signInBtn.addEventListener('click', () => api.signIn());
-  init();
+  init().finally(settle);
 })();

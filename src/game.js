@@ -591,6 +591,7 @@ class ArcadePlaygroundHub {
     this.switchGame('breakout');
     this.openSharedLevel();
     this.applyGameFlags();
+    window.PPAuth?.onChange(() => this.updatePlayAs());
 
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -668,6 +669,7 @@ class ArcadePlaygroundHub {
 
   showOverlay(subtitle, title, desc, buttonText) {
     this.hideIdentityGate();
+    this.updatePlayAs();
     document.getElementById('overlay-subtitle').textContent = subtitle;
     document.getElementById('overlay-title').textContent = title;
     document.getElementById('overlay-desc').textContent = desc;
@@ -676,6 +678,21 @@ class ArcadePlaygroundHub {
   }
 
   startOrResume() {
+    // Si el inicio de sesión aún carga, espera (máximo 4 s) antes de decidir si preguntar.
+    const auth = window.PPAuth;
+    if (this.state === 'MENU' && auth && !auth.settled) {
+      if (this.waitingForAuth) return;
+      this.waitingForAuth = true;
+      const btn = document.getElementById('btn-start');
+      const label = btn.textContent;
+      btn.textContent = '⏳ LOADING…';
+      Promise.race([auth.ready, new Promise((resolve) => setTimeout(resolve, 4000))]).then(() => {
+        this.waitingForAuth = false;
+        btn.textContent = label;
+        this.startOrResume();
+      });
+      return;
+    }
     // Antes de la primera partida se elige jugar con cuenta o como invitado.
     if (this.state === 'MENU' && this.needsIdentityChoice()) {
       this.showIdentityGate();
@@ -1071,12 +1088,36 @@ class ArcadePlaygroundHub {
     }
     gate.hidden = false;
     document.getElementById('overlay-buttons').hidden = true;
+    document.getElementById('play-as').hidden = true;
     nameInput.focus();
   }
 
   hideIdentityGate() {
     document.getElementById('identity-gate').hidden = true;
     document.getElementById('overlay-buttons').hidden = false;
+    document.getElementById('play-as').hidden = !document.getElementById('play-as').textContent;
+  }
+
+  /** Muestra bajo el botón de jugar si se juega con cuenta o como invitado. */
+  updatePlayAs() {
+    const el = document.getElementById('play-as');
+    const auth = window.PPAuth;
+    let text = '';
+    if (auth?.user) {
+      text = `Playing as ${auth.name} ✓`;
+    } else if (auth?.enabled) {
+      let guest = false;
+      let name = '';
+      try {
+        guest = sessionStorage.getItem('pp_play_mode') === 'guest';
+        name = localStorage.getItem('pp_player_name') || '';
+      } catch (_) {
+        /* almacenamiento no disponible */
+      }
+      if (guest) text = name ? `Playing as guest · ${name}` : 'Playing as guest';
+    }
+    el.textContent = text;
+    el.hidden = !text;
   }
 
   /** Abre el nivel de un link play.html?level=CODIGO, si lo hay. */

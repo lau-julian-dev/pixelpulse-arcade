@@ -1101,3 +1101,9 @@ input[type="range"]::-moz-range-thumb {
 
 .pp-banner[data-tone="event"] { background: var(--heat); }
 .pp-banner[data-tone="warning"] { background: var(--paradise); color: var(--paper); }
+
+.play-as {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--paradise);
+}
